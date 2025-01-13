@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .nav-tabs .nav-link.active {
+      background-color: #4502E8;
+      color: white !important;
+    }
+
+    .nav-tabs .nav-link {
+      color: #4502E8;
+    }
+
+    .logout-btn {
+      background-color: #4502E8;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+    }
+
+    .logout-btn:hover {
+      background-color: #5a24eb;
+      cursor: pointer;
+    }
+
+    .error-message {
+      color: red;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center">
+      <h1 class="text-center">Admin Dashboard</h1>
+      <button id="logoutButton" class="logout-btn">Logout</button>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs" id="adminTabs" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active" id="add-job-tab" data-bs-toggle="tab" data-bs-target="#add-job" type="button" role="tab" aria-controls="add-job" aria-selected="true">Add New Job</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="manage-jobs-tab" data-bs-toggle="tab" data-bs-target="#manage-jobs" type="button" role="tab" aria-controls="manage-jobs" aria-selected="false">Manage Jobs</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="applications-tab" data-bs-toggle="tab" data-bs-target="#applications" type="button" role="tab" aria-controls="applications" aria-selected="false">Applications</button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="adminTabsContent">
+      <!-- Add New Job Tab -->
+      <div class="tab-pane fade show active" id="add-job" role="tabpanel" aria-labelledby="add-job-tab">
+        <section class="my-4">
+          <h2>Add New Job</h2>
+          <form id="jobForm">
+            <div class="mb-3">
+              <input type="text" id="jobTitle" class="form-control" placeholder="Job Title" required>
+            </div>
+            <div class="mb-3">
+              <input type="text" id="location" class="form-control" placeholder="Location" required>
+            </div>
+            <div class="mb-3">
+              <input type="text" id="skills" class="form-control" placeholder="Skills (comma separated)" required>
+            </div>
+            <div class="mb-3">
+              <textarea id="description" class="form-control" placeholder="Description" required></textarea>
+            </div>
+            <div class="mb-3">
+              <select id="status" class="form-select">
+                <option value="Can Apply">Can Apply</option>
+                <option value="Not Available">Not Available</option>
+                <option value="Pending">Pending</option>
+              </select>
+            </div>
+            <div id="error" class="error-message"></div>
+            <button type="submit" class="btn btn-primary">Add Job</button>
+          </form>
+        </section>
+      </div>
+
+      <!-- Manage Jobs Tab -->
+      <div class="tab-pane fade" id="manage-jobs" role="tabpanel" aria-labelledby="manage-jobs-tab">
+        <section class="my-4">
+          <h2>Manage Jobs</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Job Title</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="jobTable">
+              <!-- Dynamic content -->
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <!-- Applications Tab -->
+      <div class="tab-pane fade" id="applications" role="tabpanel" aria-labelledby="applications-tab">
+        <section class="my-4">
+          <h2>Applications</h2>
+          <select id="filterJobTitle" class="form-select mb-3">
+            <option value="">All Jobs</option>
+          </select>
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Job Title</th>
+                <th>Applicant Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Message</th>
+                <th>Submitted At</th>
+              </tr>
+            </thead>
+            <tbody id="applicationsTable">
+              <!-- Dynamic content -->
+            </tbody>
+          </table>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAH-1mTgjdjhaXqxNOhCpHRLNQ7QblGZbQ",
+      authDomain: "codebelljobportal.firebaseapp.com",
+      projectId: "codebelljobportal",
+      storageBucket: "codebelljobportal.appspot.com",
+      messagingSenderId: "516533965908",
+      appId: "1:516533965908:web:8919af19029a1ab11289c1",
+      measurementId: "G-61HE815QSX"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore(app);
+
+    // Redirect if Not Authenticated
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        alert("You are not authorized to access this page. Redirecting to login.");
+        window.location.href = "login.html";
+      }
+    });
+
+    // Logout Functionality
+    document.getElementById('logoutButton').addEventListener('click', () => {
+      signOut(auth)
+        .then(() => {
+          alert('You have successfully logged out.');
+          window.location.href = "login.html";
+        })
+        .catch((error) => {
+          console.error('Error during logout:', error);
+        });
+    });
+
+    // Add Job
+    document.getElementById('jobForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('jobTitle').value;
+      const location = document.getElementById('location').value;
+      const skills = document.getElementById('skills').value;
+      const description = document.getElementById('description').value;
+      const status = document.getElementById('status').value;
+
+      try {
+        await addDoc(collection(db, 'jobs'), { title, location, skills, description, status });
+        alert('Job added successfully!');
+        document.getElementById('jobForm').reset();
+        loadJobs();
+      } catch (error) {
+        document.getElementById('error').textContent = error.message;
+      }
+    });
+
+    // Load Jobs
+    async function loadJobs() {
+      const jobTable = document.getElementById('jobTable');
+      jobTable.innerHTML = '';
+      const jobsSnapshot = await getDocs(collection(db, 'jobs'));
+      jobsSnapshot.forEach((doc) => {
+        const job = doc.data();
+        jobTable.innerHTML += `<tr>
+          <td><input type="text" id="title-${doc.id}" class="form-control" value="${job.title}"></td>
+          <td><input type="text" id="location-${doc.id}" class="form-control" value="${job.location}"></td>
+          <td>
+            <select id="status-${doc.id}" class="form-select form-select-sm">
+              <option value="Can Apply" ${job.status === 'Can Apply' ? 'selected' : ''}>Can Apply</option>
+              <option value="Not Available" ${job.status === 'Not Available' ? 'selected' : ''}>Not Available</option>
+              <option value="Pending" ${job.status === 'Pending' ? 'selected' : ''}>Pending</option>
+            </select>
+          </td>
+          <td>
+            <button class="btn btn-success btn-sm" onclick="saveUpdate('${doc.id}')">Save Update</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteJob('${doc.id}')">Delete</button>
+          </td>
+        </tr>`;
+      });
+    }
+
+    // Save Update
+    window.saveUpdate = async function (id) {
+      const title = document.getElementById(`title-${id}`).value;
+      const location = document.getElementById(`location-${id}`).value;
+      const status = document.getElementById(`status-${id}`).value;
+
+      try {
+        const jobRef = doc(db, 'jobs', id);
+        await updateDoc(jobRef, { title, location, status });
+        alert('Job updated successfully!');
+        loadJobs();
+      } catch (error) {
+        console.error('Error updating job:', error);
+        alert('Failed to update job. ' + error.message);
+      }
+    };
+
+    // Delete Job
+    window.deleteJob = async function (id) {
+      try {
+        const jobRef = doc(db, 'jobs', id);
+        await deleteDoc(jobRef);
+        alert('Job deleted successfully!');
+        loadJobs();
+      } catch (error) {
+        console.error('Error deleting job:', error);
+        alert('Failed to delete job. ' + error.message);
+      }
+    };
+
+    // Load Jobs on Page Load
+    loadJobs();
+
+    // Load Job Titles for Filter
+    async function loadJobTitlesForFilter() {
+      const filterJobTitle = document.getElementById('filterJobTitle');
+      const querySnapshot = await getDocs(collection(db, 'jobs'));
+
+      querySnapshot.forEach((doc) => {
+        const job = doc.data();
+        const option = document.createElement('option');
+        option.value = job.title;
+        option.textContent = job.title;
+        filterJobTitle.appendChild(option);
+      });
+    }
+
+    // Load Applications
+    async function loadApplications() {
+      const applicationsTable = document.getElementById('applicationsTable');
+      applicationsTable.innerHTML = '';
+      const selectedJob = document.getElementById('filterJobTitle').value;
+
+      const querySnapshot = await getDocs(collection(db, 'applications'));
+      querySnapshot.forEach((doc) => {
+        const application = doc.data();
+
+        if (selectedJob && application.jobTitle !== selectedJob) return;
+
+        const row = `<tr>
+          <td>${application.jobTitle}</td>
+          <td>${application.name}</td>
+          <td>${application.email}</td>
+          <td>${application.phone}</td>
+          <td>${application.message || 'N/A'}</td>
+          <td>${new Date(application.submittedAt.seconds * 1000).toLocaleString()}</td>
+        </tr>`;
+
+        applicationsTable.innerHTML += row;
+      });
+    }
+
+    // Filter Applications on Job Title Change
+    document.getElementById('filterJobTitle').addEventListener('change', loadApplications);
+
+    // Load Job Titles and Applications on Page Load
+    loadJobTitlesForFilter();
+    loadApplications();
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

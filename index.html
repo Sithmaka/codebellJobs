@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+
+  <title>CodeBell - Job Portal</title>
+  <meta content="" name="description">
+  <meta content="" name="keywords">
+
+  <!-- Favicons -->
+  <link href="assets/img/favicon.png" rel="icon">
+  <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Raleway:300,300i,400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link href="assets/vendor/aos/aos.css" rel="stylesheet">
+  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
+  <link href="assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
+  <link href="assets/vendor/remixicon/remixicon.css" rel="stylesheet">
+  <link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
+
+  <!-- Template Main CSS File -->
+  <link href="assets/css/style.css" rel="stylesheet">
+
+  <style>
+    .icon-box .title {
+      transition: none; /* Prevent hover change */
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ======= Header ======= -->
+  <header id="header" class="fixed-top d-flex align-items-center">
+    <div class="container d-flex align-items-center justify-content-between">
+
+      <div class="logo">
+        <a href="index.html"><img src="assets/img/codebell mp.png" alt="" class="img-fluid"></a>
+      </div>
+
+      <nav id="navbar" class="navbar">
+        <ul>
+          <li><a class="nav-link scrollto active" href="https://codebell.online">CodeBell</a></li>
+          <li><a class="nav-link scrollto" href="#contact">Contact</a></li>
+          <li><a class="getstarted scrollto" href="#services">Get Started</a></li>
+        </ul>
+        <i class="bi bi-list mobile-nav-toggle"></i>
+      </nav><!-- .navbar -->
+
+    </div>
+  </header><!-- End Header -->
+
+  <!-- ======= Hero Section ======= -->
+  <section id="hero" class="d-flex align-items-center">
+
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-6 pt-5 pt-lg-0 order-2 order-lg-1 d-flex flex-column justify-content-center">
+          <h1 data-aos="fade-up">Welcome to Code<span style="color: #4502E8;">Bell</span> Job Portal</h1>
+          <h2 data-aos="fade-up" data-aos-delay="400">Shape your future with CodeBell – Where innovation meets opportunity.</h2>
+          <div data-aos="fade-up" data-aos-delay="800">
+            <a href="#services" class="btn-get-started scrollto">Get Started</a>
+          </div>
+        </div>
+        <div class="col-lg-6 order-1 order-lg-2 hero-img" data-aos="fade-left" data-aos-delay="200">
+          <img src="assets/img/hero-img.png" class="img-fluid animated" alt="">
+        </div>
+      </div>
+    </div>
+
+  </section><!-- End Hero -->
+
+  <main id="main">
+
+    <!-- ======= Job Section ======= -->
+    <section id="services" class="services">
+      <div class="container">
+
+        <div class="section-title" data-aos="fade-up">
+          <h2>Available Jobs</h2>
+          <p>Join CodeBell and become part of a team delivering innovative solutions to meet the diverse needs of global businesses.</p>
+        </div>
+
+        <div class="row" id="jobCards">
+          <!-- Dynamic Job Cards from Firebase -->
+        </div>
+
+      </div>
+    </section><!-- End Services Section -->
+<!-- ======= About Us Section ======= -->
+    <!-- <section id="about" class="about">
+        <div class="container">
+  
+          <div class="section-title" data-aos="fade-up">
+            <h2>About Us</h2>
+          </div>
+  
+          <div class="row content">
+            <div class="col-lg-6" data-aos="fade-up" data-aos-delay="150">
+              <p>
+                At CodeBell, we orchestrate the symphony of technology and innovation to craft solutions that redefine 
+                possibilities. Established in December 2023, we stand at the forefront of the Generative AI revolution, 
+                empowering businesses with transformative IT solutions tailored to their unique needs.
+              </p>
+              <h3 style="color: #4502E8;">Why Choose CodeBell</h3>
+              <ul>
+                <li><i class="ri-check-double-line"></i> Innovation at the Core</li>
+                <li><i class="ri-check-double-line"></i> Customized Solutions</li>
+                <li><i class="ri-check-double-line"></i> Commitment to Excellence</li>
+                <li><i class="ri-check-double-line"></i> Partnership for Success</li>
+              </ul>                        
+            </div>
+  
+            <div class="col-lg-6 pt-4 pt-lg-0" data-aos="fade-up" data-aos-delay="300">
+              <h3 style="color: #4502E8;">What Sets Us Apart</h3>
+              <p>
+                CodeBell is not just another IT solution provider; we are architects of the future. Our team comprises visionary 
+                technologists, data scientists, and creative minds who collaborate relentlessly to deliver solutions that inspire 
+                awe and drive tangible results. We embrace complexity and thrive on challenges, turning them into opportunities 
+                for innovation.
+              </p>
+              
+              <h3 style="color: #4502E8;">Our Mission</h3>
+              <p>
+                At the heart of our mission lies a commitment to harnessing the power of Generative AI to unlock new dimensions 
+                of creativity and efficiency. We strive to pioneer groundbreaking solutions that not only meet but exceed the 
+                evolving demands of the digital landscape.
+              </p>
+              <a href="#" class="btn-learn-more">Learn More</a>
+  
+            </div>
+          </div>
+  
+        </div>
+    </section> -->
+    <!-- End About Us Section -->
+
+    <!-- ======= F.A.Q Section ======= -->
+    <section id="faq" class="faq">
+        <div class="container">
+  
+          <div class="section-title" data-aos="fade-up">
+            <h2>Frequently Asked Questions</h2>
+          </div>
+  
+          <div class="row faq-item d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="100">
+            <div class="col-lg-5">
+              <i class="ri-question-line"></i>
+              <h4>How can I apply for a job at CodeBell?</h4>
+            </div>
+            <div class="col-lg-7">
+              <p>
+                  To apply, browse through the available job positions, click the "Apply Now" button, 
+                  and fill out the form. Make sure to upload your CV for consideration.
+              </p>
+            </div>
+          </div><!-- End F.A.Q Item-->
+  
+          <div class="row faq-item d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="200">
+            <div class="col-lg-5">
+              <i class="ri-question-line"></i>
+              <h4>Can I apply for multiple job positions?</h4>
+            </div>
+            <div class="col-lg-7">
+              <p>
+                  Yes, you can apply for multiple positions that align with your skills and experience. 
+                  Ensure to tailor your application for each role.
+              </p>
+            </div>
+          </div><!-- End F.A.Q Item-->
+  
+          <div class="row faq-item d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="300">
+            <div class="col-lg-5">
+              <i class="ri-question-line"></i>
+              <h4>What qualifications are required to apply?</h4>
+            </div>
+            <div class="col-lg-7">
+              <p>
+                  The required qualifications are mentioned under each job description. 
+                  Review the skills and qualifications listed and apply accordingly.
+              </p>
+            </div>
+          </div><!-- End F.A.Q Item-->
+  
+          <div class="row faq-item d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="400">
+            <div class="col-lg-5">
+              <i class="ri-question-line"></i>
+              <h4>Is remote work available?</h4>
+            </div>
+            <div class="col-lg-7">
+              <p>
+                  Many of our positions offer remote work opportunities. Check the location details in the job description to confirm.
+              </p>
+            </div>
+          </div><!-- End F.A.Q Item-->
+  
+          <div class="row faq-item d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="500">
+            <div class="col-lg-5">
+              <i class="ri-question-line"></i>
+              <h4>How will I know if my application is successful?</h4>
+            </div>
+            <div class="col-lg-7">
+              <p>
+                  You will receive an email confirmation upon submitting your application. 
+                  Our team will review your profile and contact you if shortlisted.
+              </p>
+            </div>
+          </div><!-- End F.A.Q Item-->
+  
+          <div class="row faq-item d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="500">
+              <div class="col-lg-5">
+                <i class="ri-question-line"></i>
+                <h4>Can I update my application after submission?</h4>
+              </div>
+              <div class="col-lg-7">
+                <p>
+                  Unfortunately, once submitted, applications cannot be edited. 
+                  If there’s a significant update, consider reapplying or contacting us directly.
+                </p>
+              </div>
+          </div><!-- End F.A.Q Item-->
+  
+          <div class="row faq-item d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="500">
+              <div class="col-lg-5">
+                <i class="ri-question-line"></i>
+                <h4>What is the recruitment process like?</h4>
+              </div>
+              <div class="col-lg-7">
+                <p>
+                  Our recruitment process typically involves an initial screening, a technical assessment, 
+                  and an interview with our hiring team.
+                </p>
+              </div>
+          </div><!-- End F.A.Q Item-->
+  
+          <div class="row faq-item d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="500">
+              <div class="col-lg-5">
+                <i class="ri-question-line"></i>
+                <h4>How can I contact CodeBell for more information?</h4>
+              </div>
+              <div class="col-lg-7">
+                <p>
+                  If you have additional questions, feel free to reach out to us via the contact form on the website or email us at hr@codebell.com.
+                </p>
+              </div>
+          </div><!-- End F.A.Q Item-->
+  
+        </div>
+    </section><!-- End F.A.Q Section -->
+  
+    <!-- ======= Contact Section ======= -->
+    <section id="contact" class="contact">
+        <div class="container">
+  
+          <div class="section-title" data-aos="fade-up">
+            <h2>Contact Us</h2>
+          </div>
+  
+          <div class="row">
+  
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
+              <div class="contact-about">
+                <h3>CodeBell</h3>
+                <p>We orchestrate the symphony of technology and innovation to craft solutions that redefine possibilities. Established in December 2023, we stand at the forefront of the Generative AI revolution, empowering businesses with transformative IT solutions tailored to their unique needs.</p>
+                <!-- <div class="social-links">
+                  <a href="#" class="twitter"><i class="bi bi-twitter"></i></a>
+                  <a href="#" class="facebook"><i class="bi bi-facebook"></i></a>
+                  <a href="#" class="instagram"><i class="bi bi-instagram"></i></a>
+                  <a href="#" class="linkedin"><i class="bi bi-linkedin"></i></a>
+                </div> -->
+              </div>
+            </div>
+  
+            <div class="col-lg-3 col-md-6 mt-4 mt-md-0" data-aos="fade-up" data-aos-delay="200">
+              <div class="info">
+                <div>
+                  <i class="ri-map-pin-line"></i>
+                  <p>No. 66, Dickwella Rd,
+                   <br>Beliatta,
+                   <br>Sri Lanka</p>
+                </div>
+  
+                <div>
+                  <i class="ri-mail-send-line"></i>
+                  <p>hr@codebell.space</p>
+                </div>
+  
+                <div>
+                  <i class="ri-phone-line"></i>
+                  <p>+94 70 44 16 217</p>
+                </div>
+  
+              </div>
+            </div>
+  
+            <div class="col-lg-5 col-md-12" data-aos="fade-up" data-aos-delay="300">
+              <form action="forms/contact.php" method="post" role="form" class="php-email-form">
+                <div class="form-group">
+                  <input type="text" name="name" class="form-control" id="name" placeholder="Your Name" required>
+                </div>
+                <div class="form-group">
+                  <input type="email" class="form-control" name="email" id="email" placeholder="Your Email" required>
+                </div>
+                <div class="form-group">
+                  <input type="text" class="form-control" name="subject" id="subject" placeholder="Subject" required>
+                </div>
+                <div class="form-group">
+                  <textarea class="form-control" name="message" rows="5" placeholder="Message" required></textarea>
+                </div>
+                <div class="my-3">
+                  <div class="loading">Loading</div>
+                  <div class="error-message"></div>
+                  <div class="sent-message">Your message has been sent. Thank you!</div>
+                </div>
+                <div class="text-center"><button type="submit">Send Message</button></div>
+              </form>
+            </div>
+  
+          </div>
+  
+        </div>
+    </section><!-- End Contact Section -->
+
+  </main><!-- End #main -->
+    <!-- ======= Footer ======= -->
+    <footer id="footer">
+        <div class="container">
+        <div class="row d-flex align-items-center">
+            <div class="col-lg-6 text-lg-left text-center">
+            <div class="copyright">
+                &copy; Copyright <strong>CodeBell</strong>. All Rights Reserved
+            </div>
+            <div class="credits">
+                Designed by <a href="https://codebell.online/">CodeBell</a>
+            </div>
+            </div>
+            <div class="col-lg-6">
+            <nav class="footer-links text-lg-right text-center pt-2 pt-lg-0">
+                <a href="#intro" class="scrollto">Home</a>
+                <a href="#about" class="scrollto">About</a>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Use</a>
+            </nav>
+            </div>
+        </div>
+        </div>
+    </footer><!-- End Footer -->
+
+    <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+  
+    <!-- Firebase Integration -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAH-1mTgjdjhaXqxNOhCpHRLNQ7QblGZbQ",
+      authDomain: "codebelljobportal.firebaseapp.com",
+      projectId: "codebelljobportal",
+      storageBucket: "codebelljobportal.appspot.com",
+      messagingSenderId: "516533965908",
+      appId: "1:516533965908:web:8919af19029a1ab11289c1",
+      measurementId: "G-61HE815QSX"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const iconMapping = {
+      "Frontend Developer": "bx bx-code",
+      "Backend Developer": "bx bx-server",
+      "UI/UX Designer": "bx bx-brush",
+      "Data Scientist": "bx bx-data",
+      "Project Manager": "bx bx-briefcase"
+    };
+
+    async function loadJobs() {
+      const jobCards = document.getElementById("jobCards");
+      jobCards.innerHTML = "";
+
+      const querySnapshot = await getDocs(collection(db, "jobs"));
+      querySnapshot.forEach((doc) => {
+        const job = doc.data();
+        const iconClass = iconMapping[job.title] || "bx bx-briefcase-alt";
+        jobCards.innerHTML += `
+          <div class="col-md-6 col-lg-4 mb-4">
+            <div class="icon-box" data-aos="fade-up">
+              <div class="icon"><i class="${iconClass}"></i></div>
+              <h4 class="title"><a href="form.html">${job.title}</a></h4>
+              <p class="description">Location: ${job.location}</p>
+              <p class="description">Skills: ${job.skills}</p>
+              <br>
+              <p class="description">${job.description}</p>
+              <br>
+              ${job.status === "Can Apply" ? `<a href="form.html" class="apply-btn" target="_blank">Apply Now</a>` : "<p class='text-muted'>Not Available</p>"}
+            </div>
+          </div>`;
+      });
+    }
+
+    // Load jobs on page load
+    loadJobs();
+  </script>
+
+  <!-- Vendor JS Files -->
+  <script src="assets/vendor/purecounter/purecounter_vanilla.js"></script>
+  <script src="assets/vendor/aos/aos.js"></script>
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/vendor/glightbox/js/glightbox.min.js"></script>
+  <script src="assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
+  <script src="assets/vendor/swiper/swiper-bundle.min.js"></script>
+  <script src="assets/vendor/php-email-form/validate.js"></script>
+
+  <!-- Template Main JS File -->
+  <script src="assets/js/main.js"></script>
+
+</body>
+
+</html>
