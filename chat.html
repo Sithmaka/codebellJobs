@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Room</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      font-family: Arial, sans-serif;
+    }
+
+    .chat-container {
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .chat-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .chat-messages {
+      height: 300px;
+      overflow-y: auto;
+      background-color: #f1f1f1;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+    }
+
+    .message {
+      margin-bottom: 10px;
+    }
+
+    .message span {
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="chat-container">
+    <div id="room-selection">
+      <h2 class="chat-header">Select a Chat Room</h2>
+      <div class="mb-3">
+        <label for="chatRoom" class="form-label">Chat Room</label>
+        <select id="chatRoom" class="form-select">
+          <option value="" disabled selected>Select a Room</option>
+          <option value="Room 1">Room 1</option>
+          <option value="Room 2">Room 2</option>
+          <option value="Room 3">Room 3</option>
+          <option value="Room 4">Room 4</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label for="userName" class="form-label">Your Name</label>
+        <input type="text" id="userName" class="form-control" placeholder="Enter your name">
+      </div>
+      <button id="joinRoom" class="btn btn-primary w-100">Join Chat Room</button>
+    </div>
+
+    <div id="chat-room" style="display: none;">
+      <h2 class="chat-header" id="chatRoomHeader">Chat Room</h2>
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="input-group">
+        <input type="text" id="chatMessage" class="form-control" placeholder="Type a message">
+        <button id="sendMessage" class="btn btn-primary">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, where, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyAH-1mTgjdjhaXqxNOhCpHRLNQ7QblGZbQ",
+      authDomain: "codebelljobportal.firebaseapp.com",
+      projectId: "codebelljobportal",
+      storageBucket: "codebelljobportal.appspot.com",
+      messagingSenderId: "516533965908",
+      appId: "1:516533965908:web:8919af19029a1ab11289c1",
+      measurementId: "G-61HE815QSX"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const roomSelection = document.getElementById("room-selection");
+    const chatRoom = document.getElementById("chat-room");
+    const chatRoomHeader = document.getElementById("chatRoomHeader");
+    const chatMessages = document.getElementById("chatMessages");
+    const chatRoomSelect = document.getElementById("chatRoom");
+    const userNameInput = document.getElementById("userName");
+    const chatMessageInput = document.getElementById("chatMessage");
+    const joinRoomButton = document.getElementById("joinRoom");
+    const sendMessageButton = document.getElementById("sendMessage");
+
+    let currentRoom = "";
+    let userName = "";
+
+    // Join room logic
+    joinRoomButton.addEventListener("click", () => {
+      const selectedRoom = chatRoomSelect.value;
+      const name = userNameInput.value.trim();
+
+      if (!selectedRoom || !name) {
+        alert("Please select a room and enter your name.");
+        return;
+      }
+
+      currentRoom = selectedRoom;
+      userName = name;
+
+      chatRoomHeader.textContent = `Chat Room: ${currentRoom}`;
+      roomSelection.style.display = "none";
+      chatRoom.style.display = "block";
+
+      loadMessages(currentRoom);
+    });
+
+    // Send message
+    sendMessageButton.addEventListener("click", async () => {
+      const message = chatMessageInput.value.trim();
+
+      if (!message) {
+        alert("Please type a message.");
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "chats"), {
+          name: userName,
+          room: currentRoom,
+          text: message,
+          timestamp: serverTimestamp()
+        });
+        chatMessageInput.value = "";
+      } catch (error) {
+        console.error("Error sending message:", error);
+        alert("Failed to send message. Please try again.");
+      }
+    });
+
+    // Load messages for a room
+    function loadMessages(room) {
+      const messagesQuery = query(collection(db, "chats"), where("room", "==", room));
+
+      onSnapshot(messagesQuery, (snapshot) => {
+        chatMessages.innerHTML = ""; // Clear previous messages
+        snapshot.forEach((doc) => {
+          const messageData = doc.data();
+          const messageElement = document.createElement("div");
+          messageElement.classList.add("message");
+          messageElement.innerHTML = `<span>${messageData.name}:</span> ${messageData.text}`;
+          chatMessages.appendChild(messageElement);
+        });
+
+        // Scroll to the latest message
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      });
+    }
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
