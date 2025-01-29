@@ -1617,6 +1617,7 @@ section {
   text-decoration: none;
   font-size: 14px;
   transition: background-color 0.3s ease;
+  box-shadow: 0 1px 5px rgb(255, 255, 255); 
 }
 
 .apply-btn:hover {

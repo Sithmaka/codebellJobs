@@ -400,6 +400,7 @@
               <p class="description">${job.description}</p>
               <br>
               ${job.status === "Can Apply" ? `<a href="form.html" class="apply-btn" target="_blank">Apply Now</a>` : "<p class='text-muted'>Not Available</p>"}
+              <a href="./jobdata/${job.link}" class="apply-btn" target="_blank">More Info</a>
             </div>
           </div>`;
       });
