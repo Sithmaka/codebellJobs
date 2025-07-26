@@ -56,6 +56,9 @@
       <li class="nav-item">
         <button class="nav-link" id="applications-tab" data-bs-toggle="tab" data-bs-target="#applications" type="button" role="tab" aria-controls="applications" aria-selected="false">Applications</button>
       </li>
+      <li class="nav-item">
+        <a class="nav-link" href="schedule-interviews.html">Interviews</a>
+      </li>
     </ul>
 
     <div class="tab-content" id="adminTabsContent">
@@ -112,25 +115,30 @@
       <!-- Applications Tab -->
       <div class="tab-pane fade" id="applications" role="tabpanel" aria-labelledby="applications-tab">
         <section class="my-4">
-          <h2>Applications</h2>
-          <select id="filterJobTitle" class="form-select mb-3">
+        <h2>Applications</h2>
+        <div class="d-flex mb-3 gap-2">
+            <select id="filterJobTitle" class="form-select w-auto">
             <option value="">All Jobs</option>
-          </select>
-          <table class="table table-striped">
+            </select>
+            <input type="text" id="searchName" class="form-control w-auto" placeholder="Search by name">
+            <select id="sortDate" class="form-select w-auto">
+            <option value="desc">Newest First</option>
+            <option value="asc">Oldest First</option>
+            </select>
+        </div>
+        <table class="table table-striped">
             <thead>
-              <tr>
+            <tr>
                 <th>Job Title</th>
                 <th>Applicant Name</th>
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Message</th>
                 <th>Submitted At</th>
-              </tr>
+            </tr>
             </thead>
-            <tbody id="applicationsTable">
-              <!-- Dynamic content -->
-            </tbody>
-          </table>
+            <tbody id="applicationsTable"></tbody>
+        </table>
         </section>
       </div>
     </div>
@@ -268,31 +276,46 @@
 
     // Load Applications
     async function loadApplications() {
-      const applicationsTable = document.getElementById('applicationsTable');
-      applicationsTable.innerHTML = '';
-      const selectedJob = document.getElementById('filterJobTitle').value;
+    const applicationsTable = document.getElementById('applicationsTable');
+    applicationsTable.innerHTML = '';
 
-      const querySnapshot = await getDocs(collection(db, 'applications'));
-      querySnapshot.forEach((doc) => {
+    const selectedJob = document.getElementById('filterJobTitle').value;
+    const searchName = document.getElementById('searchName').value.toLowerCase();
+    const sortOrder = document.getElementById('sortDate').value;
+
+    let apps = [];
+    const querySnapshot = await getDocs(collection(db, 'applications'));
+    querySnapshot.forEach((doc) => {
         const application = doc.data();
-
         if (selectedJob && application.jobTitle !== selectedJob) return;
+        if (searchName && !application.name.toLowerCase().includes(searchName)) return;
+        apps.push(application);
+    });
 
+    // Sort by submittedAt
+    apps.sort((a, b) => {
+        const timeA = a.submittedAt.seconds;
+        const timeB = b.submittedAt.seconds;
+        return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+    });
+
+    apps.forEach(application => {
         const row = `<tr>
-          <td>${application.jobTitle}</td>
-          <td>${application.name}</td>
-          <td>${application.email}</td>
-          <td>${application.phone}</td>
-          <td>${application.message || 'N/A'}</td>
-          <td>${new Date(application.submittedAt.seconds * 1000).toLocaleString()}</td>
+        <td>${application.jobTitle}</td>
+        <td>${application.name}</td>
+        <td>${application.email}</td>
+        <td>${application.phone}</td>
+        <td>${application.message || 'N/A'}</td>
+        <td>${new Date(application.submittedAt.seconds * 1000).toLocaleString()}</td>
         </tr>`;
-
         applicationsTable.innerHTML += row;
-      });
+    });
     }
 
-    // Filter Applications on Job Title Change
+    // Event listeners
     document.getElementById('filterJobTitle').addEventListener('change', loadApplications);
+    document.getElementById('searchName').addEventListener('input', loadApplications);
+    document.getElementById('sortDate').addEventListener('change', loadApplications);
 
     // Load Job Titles and Applications on Page Load
     loadJobTitlesForFilter();

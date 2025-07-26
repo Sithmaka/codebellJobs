@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schedule Interviews</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1>Schedule Interviews</h1>
+      <a href="admin.html" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+
+    <!-- Add Interview Form -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h4 class="card-title">Add New Interview</h4>
+        <form id="interviewForm">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <select id="jobTitleSelect" class="form-select">
+                <option value="">Select Job Title</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <select id="applicantSelect" class="form-select">
+                <option value="">Select Applicant</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <input type="text" id="jobTitle" class="form-control" placeholder="Job Title" required readonly>
+            </div>
+            <div class="col-md-6">
+              <input type="text" id="applicantName" class="form-control" placeholder="Applicant Name" required>
+            </div>
+            <div class="col-md-6">
+              <input type="email" id="email" class="form-control" placeholder="Applicant Email" required>
+            </div>
+            <div class="col-md-6">
+              <input type="text" id="phone" class="form-control" placeholder="Applicant Mobile Number" required>
+            </div>
+            <div class="col-md-6">
+              <input type="datetime-local" id="interviewDate" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <select id="mode" class="form-select">
+                <option value="Online">Online</option>
+                <option value="Offline">Offline</option>
+              </select>
+            </div>
+            <div class="col-md-12" id="meetingLinkContainer" style="display: none;">
+              <input type="url" id="meetingLink" class="form-control" placeholder="Online Meeting Link">
+            </div>
+            <div class="col-md-12" id="locationContainer" style="display: none;">
+              <input type="text" id="location" class="form-control" placeholder="Physical Location">
+            </div>
+            <div class="col-md-12">
+              <textarea id="notes" class="form-control" placeholder="Additional Notes"></textarea>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary mt-3">Schedule Interview</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="d-flex mb-3 gap-2">
+      <input type="text" id="searchName" class="form-control w-auto" placeholder="Search by name">
+      <select id="sortDate" class="form-select w-auto">
+        <option value="desc">Newest First</option>
+        <option value="asc">Oldest First</option>
+      </select>
+    </div>
+
+    <!-- Scheduled Interviews Table -->
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Job Title</th>
+          <th>Applicant Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Date & Time</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="interviewTable"></tbody>
+    </table>
+  </div>
+
+  <!-- Details Modal -->
+  <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Interview Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p><strong>Mode:</strong> <span id="modalMode"></span></p>
+          <p><strong>Meeting / Location:</strong> <span id="modalMeeting"></span></p>
+          <p><strong>Notes:</strong> <span id="modalNotes"></span></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Date Modal -->
+  <div class="modal fade" id="editDateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Interview Date & Time</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="datetime-local" id="editDateInput" class="form-control">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="saveDateBtn">Save</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAH-1mTgjdjhaXqxNOhCpHRLNQ7QblGZbQ",
+      authDomain: "codebelljobportal.firebaseapp.com",
+      projectId: "codebelljobportal",
+      storageBucket: "codebelljobportal.appspot.com",
+      messagingSenderId: "516533965908",
+      appId: "1:516533965908:web:8919af19029a1ab11289c1",
+      measurementId: "G-61HE815QSX"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let allApplicants = [];
+    let editInterviewId = null;
+
+    // Load unique job titles
+    async function loadJobTitles() {
+      const jobTitleSelect = document.getElementById('jobTitleSelect');
+      const querySnapshot = await getDocs(collection(db, 'applications'));
+      const jobTitles = new Set();
+      allApplicants = [];
+      querySnapshot.forEach((docSnap) => {
+        const app = docSnap.data();
+        allApplicants.push(app);
+        if (app.jobTitle) jobTitles.add(app.jobTitle);
+      });
+      jobTitleSelect.innerHTML = '<option value="">Select Job Title</option>';
+      jobTitles.forEach(title => {
+        const option = document.createElement('option');
+        option.value = title;
+        option.textContent = title;
+        jobTitleSelect.appendChild(option);
+      });
+    }
+
+    // Applicant filter
+    document.getElementById('jobTitleSelect').addEventListener('change', (e) => {
+      const selectedTitle = e.target.value;
+      const applicantSelect = document.getElementById('applicantSelect');
+      applicantSelect.innerHTML = '<option value="">Select Applicant</option>';
+      const filteredApplicants = allApplicants.filter(app => app.jobTitle === selectedTitle);
+      filteredApplicants.forEach(app => {
+        const option = document.createElement('option');
+        option.value = JSON.stringify(app);
+        option.textContent = app.name;
+        applicantSelect.appendChild(option);
+      });
+    });
+
+    document.getElementById('applicantSelect').addEventListener('change', (e) => {
+      if (!e.target.value) return;
+      const app = JSON.parse(e.target.value);
+      document.getElementById('jobTitle').value = app.jobTitle || '';
+      document.getElementById('applicantName').value = app.name || '';
+      document.getElementById('email').value = app.email || '';
+      document.getElementById('phone').value = app.phone || '';
+    });
+
+    document.getElementById('mode').addEventListener('change', () => {
+      const mode = document.getElementById('mode').value;
+      document.getElementById('meetingLinkContainer').style.display = mode === 'Online' ? 'block' : 'none';
+      document.getElementById('locationContainer').style.display = mode === 'Offline' ? 'block' : 'none';
+    });
+
+    document.getElementById('interviewForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const jobTitle = document.getElementById('jobTitle').value;
+      const applicantName = document.getElementById('applicantName').value;
+      const email = document.getElementById('email').value;
+      const phone = document.getElementById('phone').value;
+      const interviewDate = document.getElementById('interviewDate').value;
+      const mode = document.getElementById('mode').value;
+      const notes = document.getElementById('notes').value;
+      const meetingLink = document.getElementById('meetingLink').value;
+      const location = document.getElementById('location').value;
+
+      await addDoc(collection(db, 'interviews'), {
+        jobTitle, applicantName, email, phone, interviewDate, mode, notes,
+        meetingLink: mode === 'Online' ? meetingLink : '',
+        location: mode === 'Offline' ? location : '',
+        status: 'Pending'
+      });
+      alert('Interview Scheduled!');
+      document.getElementById('interviewForm').reset();
+      document.getElementById('meetingLinkContainer').style.display = 'none';
+      document.getElementById('locationContainer').style.display = 'none';
+      loadInterviews();
+    });
+
+    window.showDetails = (mode, meeting, notes) => {
+      document.getElementById('modalMode').textContent = mode;
+      document.getElementById('modalMeeting').textContent = meeting;
+      document.getElementById('modalNotes').textContent = notes || 'N/A';
+      const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+      modal.show();
+    };
+
+    window.editDate = (id, currentDate) => {
+      editInterviewId = id;
+      document.getElementById('editDateInput').value = currentDate;
+      const modal = new bootstrap.Modal(document.getElementById('editDateModal'));
+      modal.show();
+    };
+
+    document.getElementById('saveDateBtn').addEventListener('click', async () => {
+      if (!editInterviewId) return;
+      const newDate = document.getElementById('editDateInput').value;
+      const interviewRef = doc(db, 'interviews', editInterviewId);
+      await updateDoc(interviewRef, { interviewDate: newDate });
+      alert('Date updated!');
+      bootstrap.Modal.getInstance(document.getElementById('editDateModal')).hide();
+      loadInterviews();
+    });
+
+    window.updateStatus = async (id, newStatus) => {
+      const interviewRef = doc(db, 'interviews', id);
+      await updateDoc(interviewRef, { status: newStatus });
+      alert(`Status updated to ${newStatus}`);
+    };
+
+    async function loadInterviews() {
+      const table = document.getElementById('interviewTable');
+      table.innerHTML = '';
+      const searchName = document.getElementById('searchName').value.toLowerCase();
+      const sortOrder = document.getElementById('sortDate').value;
+
+      let interviews = [];
+      const querySnapshot = await getDocs(collection(db, 'interviews'));
+      querySnapshot.forEach((docSnap) => {
+        const interview = docSnap.data();
+        interview.id = docSnap.id;
+        if (searchName && !interview.applicantName.toLowerCase().includes(searchName)) return;
+        interviews.push(interview);
+      });
+
+      interviews.sort((a, b) => sortOrder === 'asc'
+        ? new Date(a.interviewDate) - new Date(b.interviewDate)
+        : new Date(b.interviewDate) - new Date(a.interviewDate)
+      );
+
+      interviews.forEach(interview => {
+        const meetingOrLocation = interview.mode === 'Online'
+          ? (interview.meetingLink || 'N/A')
+          : (interview.location || 'N/A');
+
+        table.innerHTML += `
+          <tr>
+            <td>${interview.jobTitle}</td>
+            <td>${interview.applicantName}</td>
+            <td>${interview.email}</td>
+            <td>${interview.phone}</td>
+            <td>${new Date(interview.interviewDate).toLocaleString()}</td>
+            <td>
+              <select class="form-select form-select-sm" onchange="updateStatus('${interview.id}', this.value)">
+                <option value="Pending" ${interview.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                <option value="Selected" ${interview.status === 'Selected' ? 'selected' : ''}>Selected</option>
+                <option value="Rejected" ${interview.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
+              </select>
+            </td>
+            <td>
+              <button class="btn btn-info btn-sm" 
+                onclick="showDetails('${interview.mode}', '${meetingOrLocation}', '${interview.notes || ''}')">Details</button>
+              <button class="btn btn-warning btn-sm" 
+                onclick="editDate('${interview.id}', '${interview.interviewDate}')">Edit Date</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteInterview('${interview.id}')">Delete</button>
+            </td>
+          </tr>`;
+      });
+    }
+
+    window.deleteInterview = async (id) => {
+      await deleteDoc(doc(db, 'interviews', id));
+      alert('Interview deleted!');
+      loadInterviews();
+    };
+
+    document.getElementById('searchName').addEventListener('input', loadInterviews);
+    document.getElementById('sortDate').addEventListener('change', loadInterviews);
+
+    loadJobTitles();
+    loadInterviews();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
