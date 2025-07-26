@@ -381,30 +381,42 @@
       "Project Manager": "bx bx-briefcase"
     };
 
-    async function loadJobs() {
-      const jobCards = document.getElementById("jobCards");
-      jobCards.innerHTML = "";
+  async function loadJobs() {
+    const jobCards = document.getElementById("jobCards");
+    jobCards.innerHTML = "";
 
-      const querySnapshot = await getDocs(collection(db, "jobs"));
-      querySnapshot.forEach((doc) => {
-        const job = doc.data();
-        const iconClass = iconMapping[job.title] || "bx bx-briefcase-alt";
-        jobCards.innerHTML += `
-          <div class="col-md-6 col-lg-4 mb-4">
-            <div class="icon-box" data-aos="fade-up">
-              <div class="icon"><i class="${iconClass}"></i></div>
-              <h4 class="title"><a href="form.html">${job.title}</a></h4>
-              <p class="description">Location: ${job.location}</p>
-              <p class="description">Skills: ${job.skills}</p>
-              <br>
-              <p class="description">${job.description}</p>
-              <br>
-              ${job.status === "Can Apply" ? `<a href="form.html" class="apply-btn" target="_blank">Apply Now</a>` : "<p class='text-muted'>Not Available</p>"}
-              <a href="./jobdata/${job.link}" class="apply-btn" target="_blank">More Info</a>
-            </div>
-          </div>`;
-      });
-    }
+    const querySnapshot = await getDocs(collection(db, "jobs"));
+    querySnapshot.forEach((doc) => {
+      const job = doc.data();
+
+      // Skip jobs marked as "Not Available"
+      if (job.status === "Not Available") return;
+
+      const iconClass = iconMapping[job.title] || "bx bx-briefcase-alt";
+
+      // Determine action buttons based on status
+      let actionButtons = `<a href="./jobdata/${job.link}" class="apply-btn" target="_blank">More Info</a>`;
+      if (job.status === "Can Apply") {
+        actionButtons =
+          `<a href="form.html" class="apply-btn" target="_blank">Apply Now</a>
+          <a href="./jobdata/${job.link}" class="apply-btn" target="_blank">More Info</a>`;
+      }
+
+      jobCards.innerHTML += `
+        <div class="col-md-6 col-lg-4 mb-4">
+          <div class="icon-box" data-aos="fade-up">
+            <div class="icon"><i class="${iconClass}"></i></div>
+            <h4 class="title"><a href="form.html">${job.title}</a></h4>
+            <p class="description">Location: ${job.location}</p>
+            <p class="description">Skills: ${job.skills}</p>
+            <br>
+            <p class="description">${job.description}</p>
+            <br>
+            ${actionButtons}
+          </div>
+        </div>`;
+    });
+  }
 
     // Load jobs on page load
     loadJobs();
