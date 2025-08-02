@@ -130,193 +130,306 @@
     </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+  <!-- Email Modal -->
+  <div class="modal fade" id="emailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Generated Email</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <textarea id="emailContent" class="form-control" rows="12" readonly></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="copyEmailBtn">Copy</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAH-1mTgjdjhaXqxNOhCpHRLNQ7QblGZbQ",
-      authDomain: "codebelljobportal.firebaseapp.com",
-      projectId: "codebelljobportal",
-      storageBucket: "codebelljobportal.appspot.com",
-      messagingSenderId: "516533965908",
-      appId: "1:516533965908:web:8919af19029a1ab11289c1",
-      measurementId: "G-61HE815QSX"
-    };
+  <!-- SMS Modal -->
+  <div class="modal fade" id="smsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Generated SMS</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <textarea id="smsContent" class="form-control" rows="8" readonly></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="copySmsBtn">Copy</button>
+          <button type="button" class="btn btn-success" id="sendSmsBtn">Send SMS</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-    let allApplicants = [];
-    let editInterviewId = null;
+const firebaseConfig = {
+  apiKey: "AIzaSyAH-1mTgjdjhaXqxNOhCpHRLNQ7QblGZbQ",
+  authDomain: "codebelljobportal.firebaseapp.com",
+  projectId: "codebelljobportal",
+  storageBucket: "codebelljobportal.appspot.com",
+  messagingSenderId: "516533965908",
+  appId: "1:516533965908:web:8919af19029a1ab11289c1",
+  measurementId: "G-61HE815QSX"
+};
 
-    // Load unique job titles
-    async function loadJobTitles() {
-      const jobTitleSelect = document.getElementById('jobTitleSelect');
-      const querySnapshot = await getDocs(collection(db, 'applications'));
-      const jobTitles = new Set();
-      allApplicants = [];
-      querySnapshot.forEach((docSnap) => {
-        const app = docSnap.data();
-        allApplicants.push(app);
-        if (app.jobTitle) jobTitles.add(app.jobTitle);
-      });
-      jobTitleSelect.innerHTML = '<option value="">Select Job Title</option>';
-      jobTitles.forEach(title => {
-        const option = document.createElement('option');
-        option.value = title;
-        option.textContent = title;
-        jobTitleSelect.appendChild(option);
-      });
-    }
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-    // Applicant filter
-    document.getElementById('jobTitleSelect').addEventListener('change', (e) => {
-      const selectedTitle = e.target.value;
-      const applicantSelect = document.getElementById('applicantSelect');
-      applicantSelect.innerHTML = '<option value="">Select Applicant</option>';
-      const filteredApplicants = allApplicants.filter(app => app.jobTitle === selectedTitle);
-      filteredApplicants.forEach(app => {
-        const option = document.createElement('option');
-        option.value = JSON.stringify(app);
-        option.textContent = app.name;
-        applicantSelect.appendChild(option);
-      });
-    });
+let allApplicants = [];
+let editInterviewId = null;
+let smsPhoneNumber = "";
 
-    document.getElementById('applicantSelect').addEventListener('change', (e) => {
-      if (!e.target.value) return;
-      const app = JSON.parse(e.target.value);
-      document.getElementById('jobTitle').value = app.jobTitle || '';
-      document.getElementById('applicantName').value = app.name || '';
-      document.getElementById('email').value = app.email || '';
-      document.getElementById('phone').value = app.phone || '';
-    });
+async function loadJobTitles() {
+  const jobTitleSelect = document.getElementById('jobTitleSelect');
+  const querySnapshot = await getDocs(collection(db, 'applications'));
+  const jobTitles = new Set();
+  allApplicants = [];
+  querySnapshot.forEach((docSnap) => {
+    const app = docSnap.data();
+    allApplicants.push(app);
+    if (app.jobTitle) jobTitles.add(app.jobTitle);
+  });
+  jobTitleSelect.innerHTML = '<option value="">Select Job Title</option>';
+  jobTitles.forEach(title => {
+    const option = document.createElement('option');
+    option.value = title;
+    option.textContent = title;
+    jobTitleSelect.appendChild(option);
+  });
+}
 
-    document.getElementById('mode').addEventListener('change', () => {
-      const mode = document.getElementById('mode').value;
-      document.getElementById('meetingLinkContainer').style.display = mode === 'Online' ? 'block' : 'none';
-      document.getElementById('locationContainer').style.display = mode === 'Offline' ? 'block' : 'none';
-    });
+document.getElementById('jobTitleSelect').addEventListener('change', (e) => {
+  const selectedTitle = e.target.value;
+  const applicantSelect = document.getElementById('applicantSelect');
+  applicantSelect.innerHTML = '<option value="">Select Applicant</option>';
+  const filteredApplicants = allApplicants.filter(app => app.jobTitle === selectedTitle);
+  filteredApplicants.forEach(app => {
+    const option = document.createElement('option');
+    option.value = JSON.stringify(app);
+    option.textContent = app.name;
+    applicantSelect.appendChild(option);
+  });
+});
 
-    document.getElementById('interviewForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const jobTitle = document.getElementById('jobTitle').value;
-      const applicantName = document.getElementById('applicantName').value;
-      const email = document.getElementById('email').value;
-      const phone = document.getElementById('phone').value;
-      const interviewDate = document.getElementById('interviewDate').value;
-      const mode = document.getElementById('mode').value;
-      const notes = document.getElementById('notes').value;
-      const meetingLink = document.getElementById('meetingLink').value;
-      const location = document.getElementById('location').value;
+document.getElementById('applicantSelect').addEventListener('change', (e) => {
+  if (!e.target.value) return;
+  const app = JSON.parse(e.target.value);
+  document.getElementById('jobTitle').value = app.jobTitle || '';
+  document.getElementById('applicantName').value = app.name || '';
+  document.getElementById('email').value = app.email || '';
+  document.getElementById('phone').value = app.phone || '';
+});
 
-      await addDoc(collection(db, 'interviews'), {
-        jobTitle, applicantName, email, phone, interviewDate, mode, notes,
-        meetingLink: mode === 'Online' ? meetingLink : '',
-        location: mode === 'Offline' ? location : '',
-        status: 'Pending'
-      });
-      alert('Interview Scheduled!');
-      document.getElementById('interviewForm').reset();
-      document.getElementById('meetingLinkContainer').style.display = 'none';
-      document.getElementById('locationContainer').style.display = 'none';
-      loadInterviews();
-    });
+document.getElementById('mode').addEventListener('change', () => {
+  const mode = document.getElementById('mode').value;
+  document.getElementById('meetingLinkContainer').style.display = mode === 'Online' ? 'block' : 'none';
+  document.getElementById('locationContainer').style.display = mode === 'Offline' ? 'block' : 'none';
+});
 
-    window.showDetails = (mode, meeting, notes) => {
-      document.getElementById('modalMode').textContent = mode;
-      document.getElementById('modalMeeting').textContent = meeting;
-      document.getElementById('modalNotes').textContent = notes || 'N/A';
-      const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
-      modal.show();
-    };
+document.getElementById('interviewForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const jobTitle = document.getElementById('jobTitle').value;
+  const applicantName = document.getElementById('applicantName').value;
+  const email = document.getElementById('email').value;
+  const phone = document.getElementById('phone').value;
+  const interviewDate = document.getElementById('interviewDate').value;
+  const mode = document.getElementById('mode').value;
+  const notes = document.getElementById('notes').value;
+  const meetingLink = document.getElementById('meetingLink').value;
+  const location = document.getElementById('location').value;
 
-    window.editDate = (id, currentDate) => {
-      editInterviewId = id;
-      document.getElementById('editDateInput').value = currentDate;
-      const modal = new bootstrap.Modal(document.getElementById('editDateModal'));
-      modal.show();
-    };
+  await addDoc(collection(db, 'interviews'), {
+    jobTitle, applicantName, email, phone, interviewDate, mode, notes,
+    meetingLink: mode === 'Online' ? meetingLink : '',
+    location: mode === 'Offline' ? location : '',
+    status: 'Pending'
+  });
+  alert('Interview Scheduled!');
+  document.getElementById('interviewForm').reset();
+  document.getElementById('meetingLinkContainer').style.display = 'none';
+  document.getElementById('locationContainer').style.display = 'none';
+  loadInterviews();
+});
 
-    document.getElementById('saveDateBtn').addEventListener('click', async () => {
-      if (!editInterviewId) return;
-      const newDate = document.getElementById('editDateInput').value;
-      const interviewRef = doc(db, 'interviews', editInterviewId);
-      await updateDoc(interviewRef, { interviewDate: newDate });
-      alert('Date updated!');
-      bootstrap.Modal.getInstance(document.getElementById('editDateModal')).hide();
-      loadInterviews();
-    });
+window.showDetails = (mode, meeting, notes) => {
+  document.getElementById('modalMode').textContent = mode;
+  document.getElementById('modalMeeting').textContent = meeting;
+  document.getElementById('modalNotes').textContent = notes || 'N/A';
+  new bootstrap.Modal(document.getElementById('detailsModal')).show();
+};
 
-    window.updateStatus = async (id, newStatus) => {
-      const interviewRef = doc(db, 'interviews', id);
-      await updateDoc(interviewRef, { status: newStatus });
-      alert(`Status updated to ${newStatus}`);
-    };
+window.editDate = (id, currentDate) => {
+  editInterviewId = id;
+  document.getElementById('editDateInput').value = currentDate;
+  new bootstrap.Modal(document.getElementById('editDateModal')).show();
+};
 
-    async function loadInterviews() {
-      const table = document.getElementById('interviewTable');
-      table.innerHTML = '';
-      const searchName = document.getElementById('searchName').value.toLowerCase();
-      const sortOrder = document.getElementById('sortDate').value;
+document.getElementById('saveDateBtn').addEventListener('click', async () => {
+  if (!editInterviewId) return;
+  const newDate = document.getElementById('editDateInput').value;
+  const interviewRef = doc(db, 'interviews', editInterviewId);
+  await updateDoc(interviewRef, { interviewDate: newDate });
+  alert('Date updated!');
+  bootstrap.Modal.getInstance(document.getElementById('editDateModal')).hide();
+  loadInterviews();
+});
 
-      let interviews = [];
-      const querySnapshot = await getDocs(collection(db, 'interviews'));
-      querySnapshot.forEach((docSnap) => {
-        const interview = docSnap.data();
-        interview.id = docSnap.id;
-        if (searchName && !interview.applicantName.toLowerCase().includes(searchName)) return;
-        interviews.push(interview);
-      });
+window.updateStatus = async (id, newStatus) => {
+  const interviewRef = doc(db, 'interviews', id);
+  await updateDoc(interviewRef, { status: newStatus });
+  alert(`Status updated to ${newStatus}`);
+};
 
-      interviews.sort((a, b) => sortOrder === 'asc'
-        ? new Date(a.interviewDate) - new Date(b.interviewDate)
-        : new Date(b.interviewDate) - new Date(a.interviewDate)
-      );
+// Email
+window.generateEmail = (interview) => {
+  const date = new Date(interview.interviewDate);
+  const emailTemplate = `Dear ${interview.applicantName},
 
-      interviews.forEach(interview => {
-        const meetingOrLocation = interview.mode === 'Online'
-          ? (interview.meetingLink || 'N/A')
-          : (interview.location || 'N/A');
+Thank you for applying to the ${interview.jobTitle} position at CodeBell PVT LTD.
 
-        table.innerHTML += `
-          <tr>
-            <td>${interview.jobTitle}</td>
-            <td>${interview.applicantName}</td>
-            <td>${interview.email}</td>
-            <td>${interview.phone}</td>
-            <td>${new Date(interview.interviewDate).toLocaleString()}</td>
-            <td>
-              <select class="form-select form-select-sm" onchange="updateStatus('${interview.id}', this.value)">
-                <option value="Pending" ${interview.status === 'Pending' ? 'selected' : ''}>Pending</option>
-                <option value="Selected" ${interview.status === 'Selected' ? 'selected' : ''}>Selected</option>
-                <option value="Rejected" ${interview.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
-              </select>
-            </td>
-            <td>
-              <button class="btn btn-info btn-sm" 
-                onclick="showDetails('${interview.mode}', '${meetingOrLocation}', '${interview.notes || ''}')">Details</button>
-              <button class="btn btn-warning btn-sm" 
-                onclick="editDate('${interview.id}', '${interview.interviewDate}')">Edit Date</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteInterview('${interview.id}')">Delete</button>
-            </td>
-          </tr>`;
-      });
-    }
+Interview Details:
+Date: ${date.toLocaleDateString()}
+Time: ${date.toLocaleTimeString()}
+Mode: ${interview.mode}
+Venue: ${interview.mode === "Online" ? "Virtual Meeting" : "CodeBell Office"}
+Link or Location: ${interview.mode === "Online" ? (interview.meetingLink || "N/A") : (interview.location || "N/A")}
 
-    window.deleteInterview = async (id) => {
-      await deleteDoc(doc(db, 'interviews', id));
-      alert('Interview deleted!');
-      loadInterviews();
-    };
+Best regards,
+Sithmaka Danthanarayana
+Director
+HR Department
+CodeBell PVT LTD
+hr@codebell.space
++94 70 44 16 217`;
 
-    document.getElementById('searchName').addEventListener('input', loadInterviews);
-    document.getElementById('sortDate').addEventListener('change', loadInterviews);
+  document.getElementById("emailContent").value = emailTemplate;
+  new bootstrap.Modal(document.getElementById("emailModal")).show();
+};
 
-    loadJobTitles();
-    loadInterviews();
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+// SMS
+window.generateSms = (interview) => {
+  const date = new Date(interview.interviewDate);
+  const smsTemplate = `Dear ${interview.applicantName},
+
+Thank you for applying to the ${interview.jobTitle} position at CodeBell PVT LTD.
+
+Interview Details
+Date: ${date.toLocaleDateString()}
+Time: ${date.toLocaleTimeString()}
+Mode: ${interview.mode}
+Venue: ${interview.mode === "Online" ? "Virtual Meeting" : "CodeBell Office"}
+Link or Location: ${interview.mode === "Online" ? (interview.meetingLink || "N/A") : (interview.location || "N/A")}`;
+
+  document.getElementById("smsContent").value = smsTemplate;
+  smsPhoneNumber = interview.phone;
+  new bootstrap.Modal(document.getElementById("smsModal")).show();
+};
+
+// Copy
+document.getElementById("copyEmailBtn").addEventListener("click", () => {
+  document.getElementById("emailContent").select();
+  document.execCommand("copy");
+  alert("Email copied!");
+});
+
+document.getElementById("copySmsBtn").addEventListener("click", () => {
+  document.getElementById("smsContent").select();
+  document.execCommand("copy");
+  alert("SMS copied!");
+});
+
+// Send SMS via Notify.lk
+document.getElementById("sendSmsBtn").addEventListener("click", async () => {
+  const message = document.getElementById("smsContent").value;
+  if (!smsPhoneNumber) return alert("No phone number!");
+
+  // Convert local "07XXXXXXXX" to "947XXXXXXXX"
+  let formattedNumber = smsPhoneNumber.trim();
+  if (formattedNumber.startsWith("07") && formattedNumber.length === 10) {
+    formattedNumber = "94" + formattedNumber.substring(1);
+  }
+
+  try {
+    const url = `https://app.notify.lk/api/v1/send?user_id=29952&api_key=wEzQqcv2MhB7Da6rzMWq&sender_id=CodeBell&to=${encodeURIComponent(formattedNumber)}&message=${encodeURIComponent(message)}`;
+    const response = await fetch(url);
+    const result = await response.json();
+    alert(result.status === 'success' ? "SMS sent successfully!" : "Failed: " + JSON.stringify(result));
+  } catch (e) {
+    alert("Error sending SMS: " + e);
+  }
+});
+
+async function loadInterviews() {
+  const table = document.getElementById('interviewTable');
+  table.innerHTML = '';
+  const searchName = document.getElementById('searchName').value.toLowerCase();
+  const sortOrder = document.getElementById('sortDate').value;
+
+  let interviews = [];
+  const querySnapshot = await getDocs(collection(db, 'interviews'));
+  querySnapshot.forEach((docSnap) => {
+    const interview = docSnap.data();
+    interview.id = docSnap.id;
+    if (searchName && !interview.applicantName.toLowerCase().includes(searchName)) return;
+    interviews.push(interview);
+  });
+
+  interviews.sort((a, b) => sortOrder === 'asc'
+    ? new Date(a.interviewDate) - new Date(b.interviewDate)
+    : new Date(b.interviewDate) - new Date(a.interviewDate)
+  );
+
+  interviews.forEach(interview => {
+    const meetingOrLocation = interview.mode === 'Online' ? (interview.meetingLink || 'N/A') : (interview.location || 'N/A');
+    table.innerHTML += `
+      <tr>
+        <td>${interview.jobTitle}</td>
+        <td>${interview.applicantName}</td>
+        <td>${interview.email}</td>
+        <td>${interview.phone}</td>
+        <td>${new Date(interview.interviewDate).toLocaleString()}</td>
+        <td>
+          <select class="form-select form-select-sm" onchange="updateStatus('${interview.id}', this.value)">
+            <option value="Pending" ${interview.status === 'Pending' ? 'selected' : ''}>Pending</option>
+            <option value="Selected" ${interview.status === 'Selected' ? 'selected' : ''}>Selected</option>
+            <option value="Rejected" ${interview.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
+          </select>
+        </td>
+        <td>
+          <button class="btn btn-info btn-sm" onclick="showDetails('${interview.mode}', '${meetingOrLocation}', '${interview.notes || ''}')">Details</button>
+          <button class="btn btn-warning btn-sm" onclick="editDate('${interview.id}', '${interview.interviewDate}')">Edit Date</button>
+          <button class="btn btn-success btn-sm" onclick='generateEmail(${JSON.stringify(interview)})'>Create Email</button>
+          <button class="btn btn-primary btn-sm" onclick='generateSms(${JSON.stringify(interview)})'>Create SMS</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteInterview('${interview.id}')">Delete</button>
+        </td>
+      </tr>`;
+  });
+}
+
+window.deleteInterview = async (id) => {
+  await deleteDoc(doc(db, 'interviews', id));
+  alert('Interview deleted!');
+  loadInterviews();
+};
+
+document.getElementById('searchName').addEventListener('input', loadInterviews);
+document.getElementById('sortDate').addEventListener('change', loadInterviews);
+
+loadJobTitles();
+loadInterviews();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
