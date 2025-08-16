@@ -411,6 +411,7 @@ async function loadInterviews() {
           <button class="btn btn-warning btn-sm" onclick="editDate('${interview.id}', '${interview.interviewDate}')">Edit Date</button>
           <button class="btn btn-success btn-sm" onclick='generateEmail(${JSON.stringify(interview)})'>Create Email</button>
           <button class="btn btn-primary btn-sm" onclick='generateSms(${JSON.stringify(interview)})'>Create SMS</button>
+          <button class="btn btn-dark btn-sm" onclick='sendStatusSms(${JSON.stringify(interview)})'>Send Status SMS</button>
           <button class="btn btn-danger btn-sm" onclick="deleteInterview('${interview.id}')">Delete</button>
         </td>
       </tr>`;
@@ -421,6 +422,31 @@ window.deleteInterview = async (id) => {
   await deleteDoc(doc(db, 'interviews', id));
   alert('Interview deleted!');
   loadInterviews();
+};
+
+// Send Status SMS Button
+window.sendStatusSms = async (interview) => {
+  if (!interview.status || interview.status === "Pending") {
+    alert("Status is still pending. Update the status before sending.");
+    return;
+  }
+
+  // Format number
+  let phone = interview.phone.trim();
+  if (phone.startsWith("07") && phone.length === 10) {
+    phone = "94" + phone.substring(1);
+  }
+
+  const message = `Dear ${interview.applicantName}, your interview status for the "${interview.jobTitle}" position is "${interview.status}". This message confirms your participation in the 1st round of interviews. Our HR Team will reach out to you soon regarding the next steps, including details of the 2nd round. Thank you for your time and interest in joining CodeBell PVT LTD.`;
+  
+  try {
+    const url = `https://app.notify.lk/api/v1/send?user_id=29952&api_key=wEzQqcv2MhB7Da6rzMWq&sender_id=CodeBell&to=${encodeURIComponent(phone)}&message=${encodeURIComponent(message)}`;
+    const response = await fetch(url);
+    const result = await response.json();
+    alert(result.status === 'success' ? "Status SMS sent!" : "Failed: " + JSON.stringify(result));
+  } catch (e) {
+    alert("Error sending SMS: " + e);
+  }
 };
 
 document.getElementById('searchName').addEventListener('input', loadInterviews);
