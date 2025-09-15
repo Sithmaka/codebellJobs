@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reports • CodeBell EMS</title>
+  <link rel="stylesheet" href="./styles.css"/>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">CodeBell EMS</div>
+      <h2>Navigation</h2>
+      <nav class="nav">
+        <a id="nav-dashboard" href="./index.html">Dashboard</a>
+        <a id="nav-employees" href="./employees.html">Employees</a>
+        <a id="nav-projects" href="./projects.html">Projects</a>
+        <a id="nav-allocation" href="./allocation.html">Project Allocation</a>
+        <a id="nav-collab" href="./collab.html">Team Collaboration</a>
+        <a id="nav-reports" href="./reports.html">Reports</a>
+      </nav>
+      <div class="footer-note">CodeBell Employee Management System</div>
+    </aside>
+    <main class="main">
+      
+<div class="header"><h1>Reports & Analytics</h1></div>
+
+<div class="grid cols-2">
+  <div class="card"><h3>KPIs</h3><ul id="kpis"></ul></div>
+  <div class="card"><h3>Allocation by Project</h3><ul id="allocByProject"></ul></div>
+</div>
+
+<div class="card">
+  <h3>Download JSON Export</h3>
+  <button class="btn" id="export">Export</button>
+</div>
+
+    </main>
+  </div>
+  <script type="module">
+    import { setActive, seedIfEmpty } from './app.js';
+    setActive('nav-reports');
+    // seed demo data on first run
+    seedIfEmpty();
+  </script>
+  
+<script type="module">
+import { list } from './app.js';
+
+const projs = await list('projects');
+const emps = await list('employees');
+const allocs = await list('allocations');
+
+const kpis = document.querySelector('#kpis');
+const avgProjSize = allocs.length && projs.length ? (allocs.length / projs.length).toFixed(1) : 0;
+kpis.innerHTML = `
+  <li>Total Employees: <strong>${emps.length}</strong></li>
+  <li>Total Projects: <strong>${projs.length}</strong></li>
+  <li>Total Allocations: <strong>${allocs.length}</strong></li>
+  <li>Avg Team Size per Project: <strong>${avgProjSize}</strong></li>
+`;
+
+const allocByProject = document.querySelector('#allocByProject');
+const counts = {};
+allocs.forEach(a => counts[a.projectId] = (counts[a.projectId]||0)+1);
+allocByProject.innerHTML = projs.map(p => `<li>${p.name}: <strong>${counts[p.id]||0}</strong></li>`).join('');
+
+document.querySelector('#export').addEventListener('click', ()=>{
+  const data = JSON.stringify({ projects: projs, employees: emps, allocations: allocs }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement('a'), { href: url, download: 'codebell-ems-export.json' });
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+</script>
+
+</body>
+</html>

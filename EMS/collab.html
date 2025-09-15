@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Team Collaboration • CodeBell EMS</title>
+  <link rel="stylesheet" href="./styles.css"/>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">CodeBell EMS</div>
+      <h2>Navigation</h2>
+      <nav class="nav">
+        <a id="nav-dashboard" href="./index.html">Dashboard</a>
+        <a id="nav-employees" href="./employees.html">Employees</a>
+        <a id="nav-projects" href="./projects.html">Projects</a>
+        <a id="nav-allocation" href="./allocation.html">Project Allocation</a>
+        <a id="nav-collab" href="./collab.html">Team Collaboration</a>
+        <a id="nav-reports" href="./reports.html">Reports</a>
+      </nav>
+      <div class="footer-note">CodeBell Employee Management System</div>
+    </aside>
+    <main class="main">
+      
+<div class="header"><h1>Team Collaboration</h1></div>
+<div class="chat card">
+  <div class="channels">
+    <h3>Projects</h3>
+    <ul id="chan"></ul>
+  </div>
+  <div class="thread">
+    <div id="topic" class="small"></div>
+    <div class="msgs card" id="msgs"></div>
+    <form id="send" class="inline">
+      <input name="text" placeholder="Write a message..."/>
+      <button class="btn">Send</button>
+    </form>
+  </div>
+</div>
+
+    </main>
+  </div>
+  <script type="module">
+    import { setActive, seedIfEmpty } from './app.js';
+    setActive('nav-collab');
+    // seed demo data on first run
+    seedIfEmpty();
+  </script>
+  
+<script type="module">
+import { C, list } from './app.js';
+import { addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const projects = await list('projects');
+const chan = document.querySelector('#chan');
+const msgsEl = document.querySelector('#msgs');
+const topic = document.querySelector('#topic');
+projects.forEach(p => chan.innerHTML += `<li><a href="#" data-id="${p.id}">${p.name}</a></li>`);
+
+let current = projects[0]?.id || null;
+function setTopic(){ topic.textContent = current ? projects.find(p=>p.id===current)?.name : 'No project selected'; }
+setTopic();
+
+async function loadMessages(){
+  const all = await list('messages');
+  msgsEl.innerHTML = all.filter(m=>m.projectId===current).map(m => {
+    return `<div class="msg ${m.author==='me'?'mine':''}"><div class="small">${new Date(m.at).toLocaleString()}</div>${m.text}</div>`;
+  }).join('');
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+await loadMessages();
+
+chan.addEventListener('click', async (e)=>{
+  if (e.target.dataset.id){ current = e.target.dataset.id; setTopic(); await loadMessages(); }
+});
+
+document.querySelector('#send').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  const text = new FormData(ev.target).get('text');
+  if (!text) return;
+  await addDoc(C.messages, { projectId: current, text, author:'me', at: new Date().toISOString() });
+  ev.target.reset(); await loadMessages();
+});
+</script>
+
+</body>
+</html>

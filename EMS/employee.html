@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Employee • CodeBell EMS</title>
+  <link rel="stylesheet" href="./styles.css"/>
+  <style>
+    .profile-card { text-align: center; padding: 20px; }
+    .profile-card img {
+      width: 120px; height: 120px; border-radius: 50%;
+      object-fit: cover; margin-bottom: 12px;
+    }
+    .contact-info div { margin: 6px 0; font-size: 14px; }
+    .skills .tag {
+      display: inline-block; background: #f3f4f6;
+      padding: 5px 10px; border-radius: 8px;
+      margin: 3px; font-size: 13px;
+    }
+    .review-card {
+      border-bottom: 1px solid #eee; padding: 10px 0;
+    }
+    .review-card strong { display: block; margin-bottom: 4px; }
+    table.table th, table.table td {
+      padding: 10px 15px; border-bottom: 1px solid #eee;
+    }
+    table.table th { background: #f9fafb; text-align: left; }
+    .btn { padding: 6px 12px; margin-top: 10px; cursor: pointer; }
+    .badge.success { background:#d1fae5; padding:3px 6px; border-radius:5px; color:#065f46; }
+    .badge.warn { background:#fee2e2; padding:3px 6px; border-radius:5px; color:#991b1b; }
+    .photo-url-box { margin-top: 10px; }
+    .photo-url-box input { width: 100%; padding: 5px; margin-top: 5px; }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">CodeBell EMS</div>
+      <h2>Navigation</h2>
+      <nav class="nav">
+        <a id="nav-dashboard" href="./index.html">Dashboard</a>
+        <a id="nav-employees" href="./employees.html">Employees</a>
+        <a id="nav-projects" href="./projects.html">Projects</a>
+        <a id="nav-allocation" href="./allocation.html">Project Allocation</a>
+        <a id="nav-collab" href="./collab.html">Team Collaboration</a>
+        <a id="nav-reports" href="./reports.html">Reports</a>
+      </nav>
+      <div class="footer-note">CodeBell Employee Management System</div>
+    </aside>
+    <main class="main">
+
+      <div class="header"><h1 id="empName">Employee Details</h1></div>
+
+      <div class="grid cols-2">
+        <!-- Profile Column -->
+        <div class="card profile-card" id="profileCard">
+          <img id="empPhoto" src="https://via.placeholder.com/120" alt="Employee Photo"/>
+          
+          <!-- Manual Photo URL input -->
+          <div class="photo-url-box">
+            <label for="photoUrlInput"><strong>Photo URL (Storage link)</strong></label>
+            <input type="text" id="photoUrlInput" placeholder="Enter photo URL or gs:// link"/>
+            <button id="savePhotoUrlBtn" class="btn">Save Photo URL</button>
+          </div>
+
+          <h3 id="empRole"></h3>
+          <p id="empJoined"></p>
+
+          <h4 style="margin-top:15px;">Contact</h4>
+          <div id="contact" class="contact-info"></div>
+          <button id="editContactBtn" class="btn">Edit</button>
+          <button id="saveContactBtn" class="btn" style="display:none;">Save</button>
+
+          <h4>Skills</h4>
+          <div id="skills" class="skills"></div>
+          <div class="availability">
+            <h4>Availability</h4>
+            <input type="date"/>
+          </div>
+        </div>
+
+        <!-- Reviews Column -->
+        <div class="card">
+          <h3>Performance Reviews</h3>
+          <div id="reviews" style="margin-bottom:10px;"></div>
+          <form id="reviewForm" class="grid cols-2">
+            <div><label>Date<input name="date" type="date" required/></label></div>
+            <div><label>Reviewer<input name="reviewer" required/></label></div>
+            <div><label>Rating (0-5)<input name="rating" type="number" min="0" max="5" step="0.1" required/></label></div>
+            <div><label>Comments<textarea name="comments" required></textarea></label></div>
+            <div><button class="btn" type="submit">Add Review</button></div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Project History -->
+      <div class="card">
+        <h3>Project History</h3>
+        <table class="table">
+          <thead>
+            <tr><th>Project</th><th>Role</th><th>Start Date</th><th>End Date</th><th>Status</th></tr>
+          </thead>
+          <tbody id="history"></tbody>
+        </table>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Firebase + Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAH-1mTgjdjhaXqxNOhCpHRLNQ7QblGZbQ",
+      authDomain: "codebelljobportal.firebaseapp.com",
+      projectId: "codebelljobportal",
+      storageBucket: "codebelljobportal.appspot.com",
+      messagingSenderId: "516533965908",
+      appId: "1:516533965908:web:8919af19029a1ab11289c1",
+      measurementId: "G-61HE815QSX"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+    const empDocRef = doc(db, "employees", id);
+    let empData = null;
+
+    // Render Contact (editable or not)
+    function renderContact(emp, editable=false){
+      if(editable){
+        document.querySelector('#contact').innerHTML = `
+          <div><strong>Email:</strong> <input id="emailInput" value="${emp.email||''}"/></div>
+          <div><strong>Phone:</strong> <input id="phoneInput" value="${emp.phone||''}"/></div>
+          <div><strong>NIC/Passport:</strong> <input id="nicInput" value="${emp.nic||''}"/></div>
+          <div><strong>Residential Address:</strong> <input id="addressInput" value="${emp.address||''}"/></div>
+          <div><strong>Emergency Contact:</strong> <input id="emergencyInput" value="${emp.emergency||''}"/></div>
+          <div><strong>Bank Account:</strong> <input id="bankInput" value="${emp.bank||''}"/></div>
+          <div><strong>Department:</strong> <input id="deptInput" value="${emp.department||''}"/></div>
+          <div><strong>Status:</strong> <input id="statusInput" value="${emp.status||''}"/></div>
+        `;
+      } else {
+        document.querySelector('#contact').innerHTML = `
+          <div><strong>Email:</strong> ${emp.email||'—'}</div>
+          <div><strong>Phone:</strong> ${emp.phone||'—'}</div>
+          <div><strong>NIC/Passport:</strong> ${emp.nic||'—'}</div>
+          <div><strong>Residential Address:</strong> ${emp.address||'—'}</div>
+          <div><strong>Emergency Contact:</strong> ${emp.emergency||'—'}</div>
+          <div><strong>Bank Account:</strong> ${emp.bank||'—'}</div>
+          <div><strong>Department:</strong> ${emp.department||'—'}</div>
+          <div><strong>Status:</strong> <span class="badge ${emp.status==='Active'?'success':'warn'}">${emp.status||'—'}</span></div>
+        `;
+      }
+    }
+
+    async function loadEmployee() {
+      const empSnap = await getDoc(empDocRef);
+      if (!empSnap.exists()) return;
+
+      empData = empSnap.data();
+      document.querySelector('#empName').textContent = empData.name;
+      document.querySelector('#empRole').textContent = empData.role || "—";
+      document.querySelector('#empJoined').textContent = empData.joined ? `Joined ${empData.joined}` : "";
+      document.querySelector('#empPhoto').src = empData.photoURL || "https://via.placeholder.com/120";
+      document.querySelector('#photoUrlInput').value = empData.photoURL || "";
+
+      renderContact(empData, false);
+      document.querySelector('#skills').innerHTML = (empData.skills||[]).map(s=>`<span class="tag">${s}</span>`).join('');
+    }
+
+    // Edit/Save buttons
+    document.querySelector('#editContactBtn').addEventListener('click', ()=>{
+      renderContact(empData, true);
+      document.querySelector('#editContactBtn').style.display="none";
+      document.querySelector('#saveContactBtn').style.display="inline-block";
+    });
+
+    document.querySelector('#saveContactBtn').addEventListener('click', async ()=>{
+      const updated = {
+        email: document.querySelector('#emailInput').value,
+        phone: document.querySelector('#phoneInput').value,
+        nic: document.querySelector('#nicInput').value,
+        address: document.querySelector('#addressInput').value,
+        emergency: document.querySelector('#emergencyInput').value,
+        bank: document.querySelector('#bankInput').value,
+        department: document.querySelector('#deptInput').value,
+        status: document.querySelector('#statusInput').value
+      };
+      await updateDoc(empDocRef, updated);
+      empData = {...empData, ...updated};
+      renderContact(empData, false);
+      document.querySelector('#editContactBtn').style.display="inline-block";
+      document.querySelector('#saveContactBtn').style.display="none";
+      alert("Employee details updated!");
+    });
+
+import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+const storage = getStorage(app);
+
+// When saving photo URL manually
+document.querySelector('#savePhotoUrlBtn').addEventListener('click', async ()=>{
+  let newUrl = document.querySelector('#photoUrlInput').value.trim();
+  if(!newUrl) {
+    alert("Please enter a photo URL!");
+    return;
+  }
+
+  // 🔹 If user pasted gs:// link, convert it to https
+  if(newUrl.startsWith("gs://")) {
+    try {
+      const path = newUrl.replace("gs://codebelljobportal.appspot.com/", ""); 
+      const storageRef = ref(storage, path);
+      newUrl = await getDownloadURL(storageRef);  // convert to https
+    } catch (err) {
+      console.error("Failed to convert gs:// link:", err);
+      alert("Could not resolve gs:// link. Please use a valid download URL.");
+      return;
+    }
+  }
+
+  await updateDoc(empDocRef, { photoURL: newUrl });
+  empData.photoURL = newUrl;
+  document.querySelector('#empPhoto').src = newUrl;
+  alert("Photo URL updated!");
+});
+    loadEmployee();
+  </script>
+</body>
+</html>

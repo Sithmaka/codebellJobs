@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Employees • CodeBell EMS</title>
+  <link rel="stylesheet" href="./styles.css"/>
+  <style>
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      align-items: center; justify-content: center;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 24px;
+      border-radius: 12px;
+      width: 420px;
+      max-width: 90%;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px;
+    }
+    .modal-header h3 { margin: 0; }
+    .close {
+      cursor: pointer;
+      font-size: 20px;
+      border: none;
+      background: transparent;
+    }
+    .modal form label {
+      display: block;
+      margin: 10px 0 4px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .modal form input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">CodeBell EMS</div>
+      <h2>Navigation</h2>
+      <nav class="nav">
+        <a id="nav-dashboard" href="./index.html">Dashboard</a>
+        <a id="nav-employees" href="./employees.html">Employees</a>
+        <a id="nav-projects" href="./projects.html">Projects</a>
+        <a id="nav-allocation" href="./allocation.html">Project Allocation</a>
+        <a id="nav-collab" href="./collab.html">Team Collaboration</a>
+        <a id="nav-reports" href="./reports.html">Reports</a>
+      </nav>
+      <div class="footer-note">CodeBell Employee Management System</div>
+    </aside>
+    <main class="main">
+      
+      <!-- Header -->
+      <div class="header" style="justify-content: space-between;">
+        <h1>Employees</h1>
+        <button class="btn" id="addBtn">Add Employee</button>
+      </div>
+
+      <!-- Search -->
+      <div class="searchbar" style="margin-bottom: 20px;">
+        <input id="search" placeholder="Search employees"/>
+      </div>
+
+      <!-- Employee Table -->
+      <div class="card">
+        <table class="table" id="empTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Department</th>
+              <th>Role</th>
+              <th>Project</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Add Employee Modal -->
+  <div id="employeeModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Add Employee</h3>
+        <button class="close" id="closeModal">&times;</button>
+      </div>
+      <form id="employeeForm">
+        <label>Name</label>
+        <input type="text" name="name" required />
+        <label>Department</label>
+        <input type="text" name="department" required />
+        <label>Role</label>
+        <input type="text" name="role" required />
+        <label>Email</label>
+        <input type="email" name="email" />
+        <label>Phone</label>
+        <input type="text" name="phone" />
+        <label>Skills (comma separated)</label>
+        <input type="text" name="skills" />
+        <button type="submit" class="btn" style="margin-top:16px;width:100%;">Save Employee</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // ====== FIREBASE CONFIG ======
+    const firebaseConfig = {
+      apiKey: "AIzaSyAH-1mTgjdjhaXqxNOhCpHRLNQ7QblGZbQ",
+      authDomain: "codebelljobportal.firebaseapp.com",
+      projectId: "codebelljobportal",
+      storageBucket: "codebelljobportal.appspot.com",
+      messagingSenderId: "516533965908",
+      appId: "1:516533965908:web:8919af19029a1ab11289c1",
+      measurementId: "G-61HE815QSX"
+    };
+
+    // ====== INIT ======
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const C = {
+      employees: collection(db, "employees"),
+      projects: collection(db, "projects"),
+      allocations: collection(db, "allocations")
+    };
+
+    const tbody = document.querySelector('#empTable tbody');
+    const search = document.querySelector('#search');
+    const modal = document.getElementById("employeeModal");
+    const addBtn = document.getElementById("addBtn");
+    const closeModal = document.getElementById("closeModal");
+    const employeeForm = document.getElementById("employeeForm");
+
+    // Modal open/close
+    addBtn.onclick = () => { modal.style.display = "flex"; }
+    closeModal.onclick = () => { modal.style.display = "none"; }
+    window.onclick = (e) => { if(e.target==modal){ modal.style.display="none"; } }
+
+    // Utility to list docs
+    async function list(colName) {
+      const snap = await getDocs(collection(db, colName));
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+
+    // Load employee table
+    async function load() {
+      const emps = await list('employees');
+      const allocs = await list('allocations');
+      const projects = await list('projects');
+      const projMap = Object.fromEntries(projects.map(p => [p.id, p.name]));
+
+      const term = (search.value||'').toLowerCase();
+      tbody.innerHTML = '';
+
+      emps.filter(e => (e.name+e.department+e.role).toLowerCase().includes(term))
+        .forEach(e => {
+          const alloc = allocs.find(a => a.employeeId === e.id);
+          const projectName = alloc ? projMap[alloc.projectId] : "—";
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><a class="link" href="./employee.html?id=${e.id}">${e.name}</a></td>
+            <td>${e.department||''}</td>
+            <td>${e.role||''}</td>
+            <td>${projectName}</td>
+            <td><span class="badge ${e.status==='Active'?'success':'warn'}">${e.status||'—'}</span></td>
+            <td class="row-actions">
+              <button class="btn ghost" data-edit="${e.id}">Edit</button>
+              <button class="btn danger" data-del="${e.id}">Delete</button>
+            </td>`;
+          tbody.appendChild(tr);
+        });
+    }
+    search.addEventListener('input', load);
+    await load();
+
+    // Edit/Delete actions
+    document.addEventListener('click', async (e)=>{
+      if (e.target.dataset.del){
+        if (confirm('Delete this employee?')){
+          await deleteDoc(doc(db, "employees", e.target.dataset.del));
+          await load();
+        }
+      } else if (e.target.dataset.edit){
+        const id = e.target.dataset.edit;
+        const name = prompt('New name?');
+        if (name){
+          await updateDoc(doc(db, "employees", id), { name });
+          await load();
+        }
+      }
+    });
+
+    // Add employee form submit
+    employeeForm.addEventListener('submit', async (ev)=>{
+      ev.preventDefault();
+      const fd = new FormData(employeeForm);
+      const skills = (fd.get('skills')||'').split(',').map(s=>s.trim()).filter(Boolean);
+
+      await addDoc(C.employees, {
+        name: fd.get('name'),
+        department: fd.get('department'),
+        role: fd.get('role'),
+        email: fd.get('email'),
+        phone: fd.get('phone'),
+        skills,
+        status: 'Active',
+        joined: new Date().toISOString().slice(0,10)
+      });
+      employeeForm.reset();
+      modal.style.display = "none";
+      await load();
+    });
+  </script>
+</body>
+</html>

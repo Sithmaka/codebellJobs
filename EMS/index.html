@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CodeBell EMS • Dashboard</title>
+  <link rel="stylesheet" href="./styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">CodeBell EMS</div>
+      <h2>Navigation</h2>
+      <nav class="nav">
+        <a id="nav-dashboard" href="./index.html" class="active">Dashboard</a>
+        <a id="nav-employees" href="./employees.html">Employees</a>
+        <a id="nav-projects" href="./projects.html">Projects</a>
+        <a id="nav-allocation" href="./allocation.html">Project Allocation</a>
+        <a id="nav-collab" href="./collab.html">Team Collaboration</a>
+        <a id="nav-reports" href="./reports.html">Reports</a>
+      </nav>
+      <div class="footer-note">CodeBell Employee Management System</div>
+    </aside>
+    <main class="main">
+      
+      <div class="header">
+        <h1>Dashboard</h1>
+        <div class="pill">Overview of project performance, employee workload, and key metrics</div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="grid cols-3">
+        <div class="card kpi"><div><div class="small">Total Projects</div><h2 id="kpi-projects">—</h2></div></div>
+        <div class="card kpi"><div><div class="small">Active Employees</div><h2 id="kpi-employees">—</h2></div></div>
+        <div class="card kpi"><div><div class="small">Avg. Project Duration</div><h2 id="kpi-duration">—</h2></div></div>
+      </div>
+
+      <hr class="sep"/>
+
+      <!-- Performance & Budget -->
+      <div class="grid cols-2">
+        <div class="card">
+          <h3>Project Completion Rate</h3>
+          <canvas id="completionChart"></canvas>
+        </div>
+        <div class="card">
+          <h3>Project Budget vs. Actual Cost</h3>
+          <canvas id="budgetChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Workload -->
+      <div class="card" style="margin-top:20px;">
+        <h3>Employee Workload</h3>
+        <div id="employee-workload"></div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Firebase + Dashboard Logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAH-1mTgjdjhaXqxNOhCpHRLNQ7QblGZbQ",
+      authDomain: "codebelljobportal.firebaseapp.com",
+      projectId: "codebelljobportal",
+      storageBucket: "codebelljobportal.appspot.com",
+      messagingSenderId: "516533965908",
+      appId: "1:516533965908:web:8919af19029a1ab11289c1",
+      measurementId: "G-61HE815QSX"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Utility
+    function daysBetween(start, end) {
+      if (!start || !end) return 0;
+      return Math.round((new Date(end) - new Date(start)) / 86400000);
+    }
+
+    async function loadDashboard() {
+      const projectsSnap = await getDocs(collection(db, "projects"));
+      const employeesSnap = await getDocs(collection(db, "employees"));
+      const allocsSnap = await getDocs(collection(db, "allocations"));
+
+      const projects = projectsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const employees = employeesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const allocations = allocsSnap.docs.map(d => d.data());
+
+      // === KPIs ===
+      document.querySelector("#kpi-projects").textContent = projects.length;
+      const activeEmployees = employees.filter(e => e.status === "Active").length;
+      document.querySelector("#kpi-employees").textContent = activeEmployees;
+
+      const durations = projects.map(p => daysBetween(p.startDate, p.endDate)).filter(d => d > 0);
+      const avgDuration = durations.length ? Math.round(durations.reduce((a,b)=>a+b,0)/durations.length) : 0;
+      document.querySelector("#kpi-duration").textContent = avgDuration ? avgDuration + " days" : "—";
+
+      // === Completion Chart ===
+      const completionCtx = document.getElementById("completionChart").getContext("2d");
+      new Chart(completionCtx, {
+        type: "bar",
+        data: {
+          labels: projects.map(p=>p.name || "Unnamed"),
+          datasets: [{
+            label: "Completion %",
+            data: projects.map(p => p.status==="Completed"?100:(p.status==="In Progress"?75:30)),
+            backgroundColor: "#3b82f6"
+          }]
+        }
+      });
+
+      // === Budget vs Actual Chart ===
+      const budgetCtx = document.getElementById("budgetChart").getContext("2d");
+      new Chart(budgetCtx, {
+        type: "line",
+        data: {
+          labels: projects.map(p=>p.name || "Unnamed"),
+          datasets: [
+            {
+              label: "Budget (LKR)",
+              data: projects.map(p => p.budget || 0),
+              borderColor: "#2563eb",
+              fill: false
+            },
+            {
+              label: "Actual Cost (LKR)",
+              data: projects.map(p => p.actualCost || 0),
+              borderColor: "#f97316",
+              fill: false
+            }
+          ]
+        }
+      });
+
+      // === Workload Bars ===
+      const counts = {};
+      allocations.forEach(a => counts[a.employeeId] = (counts[a.employeeId]||0)+1);
+
+      const workloadDiv = document.querySelector("#employee-workload");
+      workloadDiv.innerHTML = employees.map(e => {
+        const c = counts[e.id]||0;
+        const percent = Math.min(c*20, 100); // cap at 100%
+        return `<div style="margin:6px 0;">
+          <strong>${e.name}</strong>
+          <div style="background:#e2e8f0; border-radius:8px; overflow:hidden; height:14px;">
+            <div style="width:${percent}%; background:#3b82f6; height:14px;"></div>
+          </div>
+          <span style="font-size:12px; color:#475569;">${c} tasks</span>
+        </div>`;
+      }).join("");
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>
