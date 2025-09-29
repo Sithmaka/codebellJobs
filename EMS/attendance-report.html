@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Attendance Report • CodeBell EMS</title>
+  <link rel="stylesheet" href="./styles.css"/>
+  <style>
+    .summary { display:flex; gap:20px; margin:15px 0; }
+    .summary div { padding:10px 16px; border-radius:8px; font-weight:600; }
+    .present-box { background:#dcfce7; color:#166534; }
+    .absent-box { background:#fee2e2; color:#991b1b; }
+    .leave-box { background:#fef3c7; color:#92400e; }
+    .btn-export { background:#3b82f6; color:white; padding:6px 12px; border:none; border-radius:6px; cursor:pointer; }
+    .filters { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .filters input { padding:6px 10px; border:1px solid #ddd; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">CodeBell EMS</div>
+      <h2>Navigation</h2>
+      <nav class="nav">
+        <a id="nav-dashboard" href="./index.html">Dashboard</a>
+        <a id="nav-employees" href="./employees.html">Employees</a>
+        <a id="nav-projects" href="./projects.html">Projects</a>
+        <a id="nav-allocation" href="./allocation.html">Project Allocation</a>
+        <a id="nav-attendance" href="./attendance.html">Attendance</a>
+        <a id="nav-attendance-report" href="./attendance-report.html" class="active">Attendance Report</a>
+        <a id="nav-collab" href="./collab.html">Team Collaboration</a>
+        <a id="nav-reports" href="./reports.html">Reports</a>
+      </nav>
+      <div class="footer-note">CodeBell Employee Management System</div>
+    </aside>
+
+    <main class="main">
+      <div class="header" style="justify-content: space-between;">
+        <h1>Attendance Report</h1>
+        <div class="filters">
+          <input type="date" id="fromDate"/>
+          <input type="date" id="toDate"/>
+          <input type="text" id="searchBox" placeholder="Search by name/role"/>
+          <button class="btn-export" id="exportBtn">Export CSV</button>
+        </div>
+      </div>
+
+      <div class="summary">
+        <div class="present-box">Present: <span id="presentCount">0</span></div>
+        <div class="absent-box">Absent: <span id="absentCount">0</span></div>
+        <div class="leave-box">Leave: <span id="leaveCount">0</span></div>
+      </div>
+
+      <div class="card">
+        <table class="table" id="reportTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// ====== FIREBASE CONFIG ======
+const firebaseConfig = {
+  apiKey: "AIzaSyAH-1mTgjdjhaXqxNOhCpHRLNQ7QblGZbQ",
+  authDomain: "codebelljobportal.firebaseapp.com",
+  projectId: "codebelljobportal",
+  storageBucket: "codebelljobportal.appspot.com",
+  messagingSenderId: "516533965908",
+  appId: "1:516533965908:web:8919af19029a1ab11289c1",
+  measurementId: "G-61HE815QSX"
+};
+
+// ====== INIT ======
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const tbody = document.querySelector('#reportTable tbody');
+const presentEl = document.getElementById("presentCount");
+const absentEl = document.getElementById("absentCount");
+const leaveEl = document.getElementById("leaveCount");
+const fromDateEl = document.getElementById("fromDate");
+const toDateEl = document.getElementById("toDate");
+const searchBox = document.getElementById("searchBox");
+const exportBtn = document.getElementById("exportBtn");
+
+let employees = [];
+let attendance = [];
+
+// Fetch employees
+async function fetchEmployees(){
+  const snap = await getDocs(collection(db,"employees"));
+  employees = snap.docs.map(d=>({id:d.id,...d.data()}));
+}
+
+// Fetch attendance
+async function fetchAttendance(){
+  const snap = await getDocs(collection(db,"attendance"));
+  attendance = snap.docs.map(d=>({id:d.id,...d.data()}));
+}
+
+// Load table
+async function load(){
+  tbody.innerHTML = "";
+  let filtered = [...attendance];
+
+  // Date range filter
+  const from = fromDateEl.value ? new Date(fromDateEl.value) : null;
+  const to = toDateEl.value ? new Date(toDateEl.value) : null;
+
+  if(from || to){
+    filtered = filtered.filter(a=>{
+      const d = new Date(a.date);
+      if(from && d < from) return false;
+      if(to && d > to) return false;
+      return true;
+    });
+  }
+
+  // Search filter
+  const term = (searchBox.value || "").toLowerCase();
+  if(term){
+    filtered = filtered.filter(a=>{
+      const emp = employees.find(e=>e.id===a.employeeId);
+      return (emp?.name || "").toLowerCase().includes(term) ||
+             (emp?.role || "").toLowerCase().includes(term);
+    });
+  }
+
+  let present=0, absent=0, leave=0;
+
+  filtered.forEach(a=>{
+    const emp = employees.find(e=>e.id===a.employeeId);
+    const status = a.status;
+    if(status==="Present") present++;
+    else if(status==="Absent") absent++;
+    else if(status==="Leave") leave++;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${emp?.name || a.employeeId}</td>
+      <td>${emp?.role || ""}</td>
+      <td>${status}</td>
+      <td>${a.date}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  presentEl.textContent = present;
+  absentEl.textContent = absent;
+  leaveEl.textContent = leave;
+}
+
+// Export CSV
+function exportCSV(){
+  let rows = [["Name","Role","Status","Date"]];
+  [...tbody.querySelectorAll("tr")].forEach(tr=>{
+    const cols = [...tr.querySelectorAll("td")].map(td=>td.innerText);
+    rows.push(cols);
+  });
+  let csvContent = rows.map(r=>r.join(",")).join("\n");
+  const blob = new Blob([csvContent], { type:"text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Attendance_Report_${fromDateEl.value||"All"}_${toDateEl.value||"All"}.csv`;
+  a.click();
+}
+
+// Events
+fromDateEl.addEventListener("change", load);
+toDateEl.addEventListener("change", load);
+searchBox.addEventListener("input", load);
+exportBtn.addEventListener("click", exportCSV);
+
+// Init
+await fetchEmployees();
+await fetchAttendance();
+await load();
+</script>
+</body>
+</html>

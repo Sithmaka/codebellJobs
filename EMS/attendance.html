@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Attendance • CodeBell EMS</title>
+  <link rel="stylesheet" href="./styles.css"/>
+  <style>
+    .status-present { background:#dcfce7; color:#166534; padding:3px 8px; border-radius:6px; }
+    .status-absent { background:#fee2e2; color:#991b1b; padding:3px 8px; border-radius:6px; }
+    .status-leave { background:#fef3c7; color:#92400e; padding:3px 8px; border-radius:6px; }
+    .mark-btn { padding:4px 8px; margin:2px; border:none; cursor:pointer; border-radius:5px; }
+    .present { background:#22c55e; color:white; }
+    .absent { background:#ef4444; color:white; }
+    .leave { background:#f59e0b; color:white; }
+    .date-picker { padding:6px 10px; border:1px solid #ddd; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">CodeBell EMS</div>
+      <h2>Navigation</h2>
+      <nav class="nav">
+        <a id="nav-dashboard" href="./index.html">Dashboard</a>
+        <a id="nav-employees" href="./employees.html">Employees</a>
+        <a id="nav-projects" href="./projects.html">Projects</a>
+        <a id="nav-allocation" href="./allocation.html">Project Allocation</a>
+        <a id="nav-attendance" href="./attendance.html" class="active">Attendance</a>
+        <a id="nav-collab" href="./collab.html">Team Collaboration</a>
+        <a id="nav-reports" href="./reports.html">Reports</a>
+        <a id="nav-attendance-report" href="./attendance-report.html">Attendance Report</a>
+      </nav>
+      <div class="footer-note">CodeBell Employee Management System</div>
+    </aside>
+
+    <main class="main">
+      <div class="header" style="justify-content: space-between; align-items:center;">
+        <h1>Attendance</h1>
+        <div>
+          <input type="date" id="datePicker" class="date-picker"/>
+        </div>
+      </div>
+
+      <div class="card">
+        <table class="table" id="attTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Mark Attendance</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, setDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// ====== FIREBASE CONFIG ======
+const firebaseConfig = {
+  apiKey: "AIzaSyAH-1mTgjdjhaXqxNOhCpHRLNQ7QblGZbQ",
+  authDomain: "codebelljobportal.firebaseapp.com",
+  projectId: "codebelljobportal",
+  storageBucket: "codebelljobportal.appspot.com",
+  messagingSenderId: "516533965908",
+  appId: "1:516533965908:web:8919af19029a1ab11289c1",
+  measurementId: "G-61HE815QSX"
+};
+
+// ====== INIT ======
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const tbody = document.querySelector('#attTable tbody');
+const datePicker = document.getElementById("datePicker");
+
+// Default date = today
+let selectedDate = new Date().toISOString().split("T")[0];
+datePicker.value = selectedDate;
+
+// Load employees + attendance
+async function load(){
+  const empsSnap = await getDocs(collection(db,"employees"));
+  const emps = empsSnap.docs.map(d=>({id:d.id,...d.data()}));
+
+  const attSnap = await getDocs(collection(db,"attendance"));
+  const allAtt = attSnap.docs.map(d=>({id:d.id,...d.data()}));
+  const dayAtt = allAtt.filter(a=>a.date===selectedDate);
+
+  tbody.innerHTML = '';
+  emps.forEach(emp=>{
+    const record = dayAtt.find(a=>a.employeeId===emp.id);
+    const status = record?.status || "Not Marked";
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${emp.name}</td>
+      <td>${emp.role||''}</td>
+      <td>
+        ${status==="Present" ? `<span class="status-present">${status}</span>` :
+          status==="Absent" ? `<span class="status-absent">${status}</span>` :
+          status==="Leave" ? `<span class="status-leave">${status}</span>` :
+          `<span>${status}</span>`}
+      </td>
+      <td>
+        <button class="mark-btn present" data-id="${emp.id}" data-status="Present">Present</button>
+        <button class="mark-btn absent" data-id="${emp.id}" data-status="Absent">Absent</button>
+        <button class="mark-btn leave" data-id="${emp.id}" data-status="Leave">Leave</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+await load();
+
+// Mark attendance
+document.addEventListener('click', async(e)=>{
+  if(e.target.dataset.status){
+    const eid = e.target.dataset.id;
+    const status = e.target.dataset.status;
+
+    await setDoc(doc(db,"attendance",`${eid}_${selectedDate}`), {
+      employeeId: eid,
+      date: selectedDate,
+      status
+    });
+    await load();
+  }
+});
+
+// Change date
+datePicker.addEventListener("change", async()=>{
+  selectedDate = datePicker.value;
+  await load();
+});
+</script>
+</body>
+</html>
