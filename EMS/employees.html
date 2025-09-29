@@ -123,117 +123,126 @@
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // ====== FIREBASE CONFIG ======
-    const firebaseConfig = {
-      apiKey: "AIzaSyAH-1mTgjdjhaXqxNOhCpHRLNQ7QblGZbQ",
-      authDomain: "codebelljobportal.firebaseapp.com",
-      projectId: "codebelljobportal",
-      storageBucket: "codebelljobportal.appspot.com",
-      messagingSenderId: "516533965908",
-      appId: "1:516533965908:web:8919af19029a1ab11289c1",
-      measurementId: "G-61HE815QSX"
-    };
+  // ====== FIREBASE CONFIG ======
+  const firebaseConfig = {
+    apiKey: "AIzaSyAH-1mTgjdjhaXqxNOhCpHRLNQ7QblGZbQ",
+    authDomain: "codebelljobportal.firebaseapp.com",
+    projectId: "codebelljobportal",
+    storageBucket: "codebelljobportal.appspot.com",
+    messagingSenderId: "516533965908",
+    appId: "1:516533965908:web:8919af19029a1ab11289c1",
+    measurementId: "G-61HE815QSX"
+  };
 
-    // ====== INIT ======
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+  // ====== INIT ======
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    const C = {
-      employees: collection(db, "employees"),
-      projects: collection(db, "projects"),
-      allocations: collection(db, "allocations")
-    };
+  const C = {
+    employees: collection(db, "employees"),
+    projects: collection(db, "projects"),
+    allocations: collection(db, "allocations")
+  };
 
-    const tbody = document.querySelector('#empTable tbody');
-    const search = document.querySelector('#search');
-    const modal = document.getElementById("employeeModal");
-    const addBtn = document.getElementById("addBtn");
-    const closeModal = document.getElementById("closeModal");
-    const employeeForm = document.getElementById("employeeForm");
+  const tbody = document.querySelector('#empTable tbody');
+  const search = document.querySelector('#search');
+  const modal = document.getElementById("employeeModal");
+  const addBtn = document.getElementById("addBtn");
+  const closeModal = document.getElementById("closeModal");
+  const employeeForm = document.getElementById("employeeForm");
 
-    // Modal open/close
-    addBtn.onclick = () => { modal.style.display = "flex"; }
-    closeModal.onclick = () => { modal.style.display = "none"; }
-    window.onclick = (e) => { if(e.target==modal){ modal.style.display="none"; } }
+  // Modal open/close
+  addBtn.onclick = () => { modal.style.display = "flex"; }
+  closeModal.onclick = () => { modal.style.display = "none"; }
+  window.onclick = (e) => { if(e.target==modal){ modal.style.display="none"; } }
 
-    // Utility to list docs
-    async function list(colName) {
-      const snap = await getDocs(collection(db, colName));
-      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    }
+  // Utility to list docs
+  async function list(colName) {
+    const snap = await getDocs(collection(db, colName));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }
 
-    // Load employee table
-    async function load() {
-      const emps = await list('employees');
-      const allocs = await list('allocations');
-      const projects = await list('projects');
-      const projMap = Object.fromEntries(projects.map(p => [p.id, p.name]));
+  // Load employee table
+  async function load() {
+    const emps = await list('employees');
+    const allocs = await list('allocations');
 
-      const term = (search.value||'').toLowerCase();
-      tbody.innerHTML = '';
+    const term = (search.value||'').toLowerCase();
+    tbody.innerHTML = '';
 
-      emps.filter(e => (e.name+e.department+e.role).toLowerCase().includes(term))
-        .forEach(e => {
-          const alloc = allocs.find(a => a.employeeId === e.id);
-          const projectName = alloc ? projMap[alloc.projectId] : "—";
+    emps.filter(e => (e.name+e.department+e.role).toLowerCase().includes(term))
+      .forEach(e => {
+        // count how many allocations this employee has
+        const projectCount = allocs.filter(a => a.employeeId === e.id).length;
 
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td><a class="link" href="./employee.html?id=${e.id}">${e.name}</a></td>
-            <td>${e.department||''}</td>
-            <td>${e.role||''}</td>
-            <td>${projectName}</td>
-            <td><span class="badge ${e.status==='Active'?'success':'warn'}">${e.status||'—'}</span></td>
-            <td class="row-actions">
-              <button class="btn ghost" data-edit="${e.id}">Edit</button>
-              <button class="btn danger" data-del="${e.id}">Delete</button>
-            </td>`;
-          tbody.appendChild(tr);
-        });
-    }
-    search.addEventListener('input', load);
-    await load();
-
-    // Edit/Delete actions
-    document.addEventListener('click', async (e)=>{
-      if (e.target.dataset.del){
-        if (confirm('Delete this employee?')){
-          await deleteDoc(doc(db, "employees", e.target.dataset.del));
-          await load();
-        }
-      } else if (e.target.dataset.edit){
-        const id = e.target.dataset.edit;
-        const name = prompt('New name?');
-        if (name){
-          await updateDoc(doc(db, "employees", id), { name });
-          await load();
-        }
-      }
-    });
-
-    // Add employee form submit
-    employeeForm.addEventListener('submit', async (ev)=>{
-      ev.preventDefault();
-      const fd = new FormData(employeeForm);
-      const skills = (fd.get('skills')||'').split(',').map(s=>s.trim()).filter(Boolean);
-
-      await addDoc(C.employees, {
-        name: fd.get('name'),
-        department: fd.get('department'),
-        role: fd.get('role'),
-        email: fd.get('email'),
-        phone: fd.get('phone'),
-        skills,
-        status: 'Active',
-        joined: new Date().toISOString().slice(0,10)
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><a class="link" href="./employee.html?id=${e.id}">${e.name}</a></td>
+          <td>${e.department||''}</td>
+          <td>${e.role||''}</td>
+          <td>${projectCount}</td>
+          <td><span class="badge ${e.status==='Active'?'success':'warn'}">${e.status||'—'}</span></td>
+          <td class="row-actions">
+            <button class="btn ghost" data-edit="${e.id}">Edit</button>
+            <button class="btn danger" data-del="${e.id}">Delete</button>
+          </td>`;
+        tbody.appendChild(tr);
       });
-      employeeForm.reset();
-      modal.style.display = "none";
+  }
+  search.addEventListener('input', load);
+  await load();
+
+  // Edit/Delete actions
+  document.addEventListener('click', async (e)=>{
+    if (e.target.dataset.del){
+      if (confirm('Delete this employee?')){
+        await deleteDoc(doc(db, "employees", e.target.dataset.del));
+        await load();
+      }
+    } else if (e.target.dataset.edit){
+      const id = e.target.dataset.edit;
+      const currentEmp = (await getDocs(collection(db, "employees"))).docs.find(d => d.id === id)?.data();
+
+      // prompt for new name
+      const name = prompt('Enter new name:', currentEmp?.name || '');
+      if (!name) return;
+
+      // prompt for new status
+      let status = prompt('Enter status (Active/Inactive):', currentEmp?.status || 'Active');
+      status = (status || '').trim();
+      if (!['Active','Inactive'].includes(status)){
+        alert("Invalid status. Please enter 'Active' or 'Inactive'.");
+        return;
+      }
+
+      await updateDoc(doc(db, "employees", id), { name, status });
       await load();
+    }
+  });
+
+  // Add employee form submit
+  employeeForm.addEventListener('submit', async (ev)=>{
+    ev.preventDefault();
+    const fd = new FormData(employeeForm);
+    const skills = (fd.get('skills')||'').split(',').map(s=>s.trim()).filter(Boolean);
+
+    await addDoc(C.employees, {
+      name: fd.get('name'),
+      department: fd.get('department'),
+      role: fd.get('role'),
+      email: fd.get('email'),
+      phone: fd.get('phone'),
+      skills,
+      status: 'Active',
+      joined: new Date().toISOString().slice(0,10)
     });
-  </script>
+    employeeForm.reset();
+    modal.style.display = "none";
+    await load();
+  });
+</script>
 </body>
 </html>

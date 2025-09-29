@@ -5,6 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Project Allocation • CodeBell EMS</title>
   <link rel="stylesheet" href="./styles.css"/>
+  <style>
+    .emp-card {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:14px 18px; border:1px solid #e5e7eb; border-radius:10px;
+      margin-bottom:10px; background:#f9fafb; transition:.2s;
+    }
+    .emp-card:hover { background:#f3f4f6; }
+    .emp-info { display:flex; flex-direction:column; gap:6px; }
+    .emp-name { font-size:16px; font-weight:600; color:#111827; }
+    .job-role {
+      font-size:14px; font-weight:500; color:#0369a1;
+      background:#e0f2fe; padding:4px 10px;
+      border-radius:6px; display:inline-block;
+    }
+    .emp-check { flex-shrink:0; }
+    .emp-check input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      accent-color: #2563eb; /* nice blue highlight (modern browsers) */
+    }
+    .alloc-list { list-style:none; padding:0; margin:0; }
+    .alloc-item {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:10px; border-bottom:1px solid #e5e7eb;
+    }
+    .alloc-item span { flex:1; }
+    .role-badge {
+      padding:4px 10px; border-radius:6px; font-size:13px;
+      font-weight:500; margin-left:6px;
+    }
+    .remove-btn {
+      background:#fee2e2; color:#991b1b; border:none;
+      border-radius:6px; padding:5px 10px; cursor:pointer;
+      font-size:13px; font-weight:500;
+    }
+  </style>
 </head>
 <body>
   <div class="app-shell">
@@ -15,7 +52,7 @@
         <a id="nav-dashboard" href="./index.html">Dashboard</a>
         <a id="nav-employees" href="./employees.html">Employees</a>
         <a id="nav-projects" href="./projects.html">Projects</a>
-        <a id="nav-allocation" href="./allocation.html">Project Allocation</a>
+        <a id="nav-allocation" href="./allocation.html" class="active">Project Allocation</a>
         <a id="nav-collab" href="./collab.html">Team Collaboration</a>
         <a id="nav-reports" href="./reports.html">Reports</a>
       </nav>
@@ -23,75 +60,125 @@
     </aside>
     <main class="main">
       
-<div class="header"><h1>Project Allocation</h1></div>
+      <div class="header"><h1>Project Allocation</h1></div>
 
-<div class="grid cols-2">
-  <div class="card">
-    <h3>Employees</h3>
-    <input id="skill" placeholder="Filter by skill (e.g., Design)"/>
-    <ul id="empList"></ul>
-  </div>
-  <div class="card">
-    <h3>Projects</h3>
-    <select id="project"></select>
-    <div class="footer-note">Choose a project then select employees to assign.</div>
-    <button class="btn" id="assignBtn" style="margin-top:10px;">Assign Selected</button>
-    <h4>Current Allocations</h4>
-    <ul id="allocs"></ul>
-  </div>
-</div>
+      <div class="grid cols-2">
+        <!-- Employees -->
+        <div class="card">
+          <h3>Employees</h3>
+          <input id="skill" placeholder="Filter by role (e.g., Developer)"/>
+          <div id="empList"></div>
+        </div>
+
+        <!-- Projects & Allocations -->
+        <div class="card">
+          <h3>Projects</h3>
+          <select id="project"></select>
+          <div class="footer-note">Choose a project then select employees to assign.</div>
+          <button class="btn" id="assignBtn" style="margin-top:10px;">Assign Selected</button>
+          <h4>Current Allocations</h4>
+          <ul id="allocs" class="alloc-list"></ul>
+        </div>
+      </div>
 
     </main>
   </div>
+
   <script type="module">
-    import { setActive, seedIfEmpty } from './app.js';
+    import { setActive } from './app.js';
     setActive('nav-allocation');
-    // seed demo data on first run
-    seedIfEmpty();
   </script>
   
-<script type="module">
-import { C, list } from './app.js';
-import { addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  <script type="module">
+    import { C, list } from './app.js';
+    import { addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const skill = document.querySelector('#skill');
-const empList = document.querySelector('#empList');
-const projectSel = document.querySelector('#project');
-const allocsUl = document.querySelector('#allocs');
+    const skill = document.querySelector('#skill');
+    const empList = document.querySelector('#empList');
+    const projectSel = document.querySelector('#project');
+    const allocsUl = document.querySelector('#allocs');
 
-const employees = await list('employees');
-const projects = await list('projects');
-projects.forEach(p => projectSel.innerHTML += `<option value="${p.id}">${p.name}</option>`);
+    const employees = await list('employees');
+    const projects = await list('projects');
+    projects.forEach(p => projectSel.innerHTML += `<option value="${p.id}">${p.name}</option>`);
 
-function renderEmployees(){
-  const term = (skill.value||'').toLowerCase();
-  empList.innerHTML = employees.filter(e => !term || (e.skills||[]).join(' ').toLowerCase().includes(term))
-    .map(e => `<li><label><input type="checkbox" value="${e.id}"> ${e.name} <span class="small">(${(e.skills||[]).join(', ')||'no skills'})</span></label></li>`).join('');
-}
-skill.addEventListener('input', renderEmployees);
-renderEmployees();
+    let currentAllocations = [];
 
-async function loadAllocations(){
-  const allocs = await list('allocations');
-  const pid = projectSel.value;
-  allocsUl.innerHTML = allocs.filter(a => a.projectId===pid).map(a => {
-    const emp = employees.find(e => e.id===a.employeeId);
-    return `<li>${emp?.name||a.employeeId} — ${a.role||''} <span class="small">${new Date(a.assignedOn).toLocaleDateString()}</span></li>`
-  }).join('') || '<li>No allocations yet.</li>';
-}
-projectSel.addEventListener('change', loadAllocations);
-await loadAllocations();
+    function renderEmployees(){
+      const term = (skill.value||'').toLowerCase();
+      empList.innerHTML = employees
+        .filter(e => !term || (e.role||'').toLowerCase().includes(term))
+        .map(e => {
+          const isChecked = currentAllocations.some(a => a.employeeId === e.id);
+          return `
+            <div class="emp-card">
+              <div class="emp-info">
+                <span class="emp-name">${e.name}</span>
+                <span class="job-role">${e.role || 'No Role'}</span>
+              </div>
+              <div class="emp-check">
+                <input type="checkbox" value="${e.id}" ${isChecked ? 'checked' : ''}/>
+              </div>
+            </div>
+          `;
+        }).join('');
+    }
 
-document.querySelector('#assignBtn').addEventListener('click', async ()=>{
-  const pid = projectSel.value;
-  const checked = [...empList.querySelectorAll('input[type=checkbox]:checked')].map(i=>i.value);
-  for (const eid of checked){
-    await addDoc(C.allocations, { employeeId: eid, projectId: pid, role: 'Member', assignedOn: new Date().toISOString() });
-  }
-  alert('Assigned!');
-  await loadAllocations();
-});
-</script>
+    async function loadAllocations(){
+      const allocs = await list('allocations');
+      const pid = projectSel.value;
+      currentAllocations = allocs.filter(a => a.projectId===pid);
+
+      // Current allocations list
+      allocsUl.innerHTML = currentAllocations.map(a => {
+        const emp = employees.find(e => e.id===a.employeeId);
+        const role = emp?.role || a.role || "Member";
+        return `
+          <li class="alloc-item">
+            <span>
+              ${emp?.name || a.employeeId}
+              <span class="role-badge">${role}</span>
+              <span class="small">(${new Date(a.assignedOn).toLocaleDateString()})</span>
+            </span>
+            <button class="remove-btn" data-del="${a.id}">Remove</button>
+          </li>`;
+      }).join('') || '<li>No allocations yet.</li>';
+
+      // Refresh employee list with checkboxes marked
+      renderEmployees();
+    }
+
+    projectSel.addEventListener('change', loadAllocations);
+    await loadAllocations();
+
+    document.querySelector('#assignBtn').addEventListener('click', async ()=>{
+      const pid = projectSel.value;
+      const checked = [...empList.querySelectorAll('input[type=checkbox]:checked')].map(i=>i.value);
+
+      for (const eid of checked){
+        if (!currentAllocations.some(a => a.employeeId === eid)) {
+          await addDoc(C.allocations, { 
+            employeeId: eid, 
+            projectId: pid, 
+            role: employees.find(e=>e.id===eid)?.role || 'Member',
+            assignedOn: new Date().toISOString() 
+          });
+        }
+      }
+      alert('Assigned!');
+      await loadAllocations();
+    });
+
+    // Remove allocation
+    document.addEventListener('click', async (e)=>{
+      if (e.target.dataset.del){
+        if (confirm("Remove this member from project?")){
+          await deleteDoc(doc(C.allocations, e.target.dataset.del));
+          await loadAllocations();
+        }
+      }
+    });
+  </script>
 
 </body>
 </html>
